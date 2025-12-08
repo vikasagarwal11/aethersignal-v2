@@ -1,0 +1,4 @@
+  Patient: John Smith, 45 years old, male
+  Drug: Aspirin 100mg daily started on Jan 1, 2024
+  Adverse Event: Stomach bleeding
+  Onset Date: January 15, 2024

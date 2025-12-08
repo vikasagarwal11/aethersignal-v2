@@ -1,0 +1,28 @@
+Patient: Jane Smith, 52 years old, female
+Medical Record Number: MR-2024-001234
+Date of Birth: 1972-03-15
+
+Drug Information:
+- Drug Name: Lipitor (Atorvastatin)
+- Dose: 20mg once daily
+- Route: Oral
+- Start Date: 2024-11-15
+- Indication: High cholesterol
+
+Adverse Event:
+- Reaction: Severe muscle pain and weakness
+- Onset Date: 2024-12-01
+- Severity: Moderate to severe
+- Outcome: Recovering
+- Serious: Yes (hospitalization required)
+
+Clinical Notes:
+Patient presented with severe muscle pain in both legs and arms. 
+Elevated CPK levels detected (2,450 U/L, normal <200). 
+Drug discontinued on 2024-12-02. 
+Patient recovering with supportive care.
+
+  Patient: John Smith, 45 years old, male
+  Drug: Aspirin 100mg daily started on Jan 1, 2024
+  Adverse Event: Stomach bleeding
+  Onset Date: January 15, 2024

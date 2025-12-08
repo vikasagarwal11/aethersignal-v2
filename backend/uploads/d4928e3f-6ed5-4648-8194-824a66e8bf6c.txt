@@ -1,0 +1,25 @@
+ADVERSE EVENT REPORT
+
+Patient Demographics:
+- Age: 45 years
+- Sex: Male
+- Weight: 85 kg
+
+Medication:
+Drug: Aspirin
+Dosage: 100mg daily
+Started: 2024-10-01
+Reason: Cardiovascular prevention
+
+Adverse Reaction:
+Description: Severe stomach pain and gastrointestinal bleeding
+Onset: 2024-11-20
+Seriousness: Yes (life-threatening)
+Outcome: Recovered with treatment
+
+Additional Information:
+Patient experienced sudden onset of severe abdominal pain with 
+bloody stools. Emergency department visit required. 
+Aspirin was immediately discontinued. 
+Endoscopy revealed gastric ulcer. Patient recovered after treatment.
+

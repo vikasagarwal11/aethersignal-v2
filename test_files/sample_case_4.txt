@@ -1,0 +1,27 @@
+PHARMACOVIGILANCE CASE REPORT
+
+Patient Information:
+- Age: 67 years
+- Gender: Female
+- Medical History: Hypertension, Type 2 Diabetes
+
+Drug Details:
+- Name: Warfarin
+- Strength: 5mg
+- Frequency: Once daily
+- Start Date: 2024-10-15
+- Indication: Atrial fibrillation, stroke prevention
+
+Adverse Event:
+- Reaction: Excessive bleeding and bruising
+- Severity: Severe
+- Onset Date: 2024-12-05
+- Serious: Yes (required medical intervention)
+- Outcome: Recovering
+
+Clinical Details:
+Patient presented with multiple large bruises and prolonged 
+bleeding from minor cuts. INR was elevated at 4.8 (target 2-3). 
+Warfarin dose reduced and patient monitored closely. 
+Bleeding resolved with dose adjustment.
+

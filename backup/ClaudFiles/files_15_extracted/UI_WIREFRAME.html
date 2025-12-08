@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherSignal V2 - Complete UI Wireframe</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Top Navigation */
+        .navbar {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+        
+        .sidebar-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .session-item {
+            padding: 0.75rem;
+            background: #334155;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .session-item:hover {
+            background: #475569;
+        }
+        
+        .session-item.active {
+            background: #3b82f6;
+        }
+        
+        .session-name {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .session-stats {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Compact AI Priority Signals */
+        .priority-signals-compact {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 1rem 2rem;
+        }
+        
+        .signals-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+        
+        .signals-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .toggle-icon {
+            color: #64748b;
+        }
+        
+        .signals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .signal-card-compact {
+            background: #ef4444;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .signal-drug {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .signal-reaction {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+        
+        .signal-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+        }
+        
+        /* Dashboard Stats */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+            background: #0f172a;
+        }
+        
+        .stat-card {
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid #334155;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+        
+        /* Signals Table */
+        .signals-table-container {
+            flex: 1;
+            overflow: auto;
+            padding: 0 2rem 2rem;
+        }
+        
+        .signals-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1e293b;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        
+        .signals-table th {
+            background: #334155;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #475569;
+        }
+        
+        .signals-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .signals-table tr:hover {
+            background: #334155;
+            cursor: pointer;
+        }
+        
+        /* Chat Interface (Bottom) */
+        .chat-interface {
+            position: fixed;
+            bottom: 0;
+            left: 250px;
+            right: 0;
+            background: #1e293b;
+            border-top: 1px solid #334155;
+            transition: height 0.3s;
+            z-index: 1000;
+        }
+        
+        .chat-interface.collapsed {
+            height: 60px;
+        }
+        
+        .chat-interface.expanded {
+            height: 400px;
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .chat-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .chat-messages {
+            padding: 1rem 2rem;
+            height: calc(100% - 120px);
+            overflow-y: auto;
+        }
+        
+        .chat-input-area {
+            padding: 1rem 2rem;
+            border-top: 1px solid #334155;
+        }
+        
+        .chat-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            font-size: 0.875rem;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+        }
+        
+        .message.user {
+            background: #3b82f6;
+            margin-left: auto;
+        }
+        
+        .message.ai {
+            background: #334155;
+        }
+        
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal {
+            background: #1e293b;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            border: 1px solid #334155;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-content {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-critical {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .badge-high {
+            background: #f97316;
+            color: white;
+        }
+        
+        .badge-low {
+            background: #64748b;
+            color: white;
+        }
+        
+        .annotation {
+            position: relative;
+        }
+        
+        .annotation-note {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fbbf24;
+            color: #000;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <div class="navbar">
+        <div class="logo">⚡ AetherSignal V2</div>
+        <div class="nav-actions">
+            <button class="btn btn-secondary" onclick="showDuplicateModal()">
+                📁 Upload Data
+            </button>
+            <button class="btn btn-primary">
+                📊 Generate Report
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">📅 Sessions</div>
+                <div class="session-item active">
+                    <div class="session-name">All Sessions</div>
+                    <div class="session-stats">38 cases • 15 signals</div>
+                </div>
+                <div class="session-item">
+                    <div class="session-name">Today (Dec 7)</div>
+                    <div class="session-stats">10 files • 38 cases</div>
+                </div>
+                <div class="session-item">
+                    <div class="session-name">Dec 6, 2025</div>
+                    <div class="session-stats">5 files • 22 cases</div>
+                </div>
+                <div class="session-item">
+                    <div class="session-name">Dec 5, 2025</div>
+                    <div class="session-stats">3 files • 15 cases</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-title">🔍 Quick Actions</div>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem;">
+                    🔄 Refresh Signals
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem;">
+                    📤 Export Data
+                </button>
+                <button class="btn btn-secondary" style="width: 100%;">
+                    ⚙️ Settings
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Compact AI Priority Signals -->
+            <div class="priority-signals-compact">
+                <div class="signals-header" onclick="togglePrioritySignals()">
+                    <div class="signals-title">
+                        🎯 AI Priority Signals (3)
+                        <span class="annotation">
+                            <span class="annotation-note">90% LESS SPACE! ✨</span>
+                        </span>
+                    </div>
+                    <span class="toggle-icon" id="toggleIcon">▼</span>
+                </div>
+                <div class="signals-grid" id="prioritySignals">
+                    <div class="signal-card-compact">
+                        <div class="signal-drug">Aspirin + Stomach bleeding</div>
+                        <div class="signal-reaction">PRR: 0.9 • Critical</div>
+                        <div class="signal-stats">
+                            <span>9 cases</span>
+                            <span>AI: 97%</span>
+                        </div>
+                    </div>
+                    <div class="signal-card-compact">
+                        <div class="signal-drug">Lipitor + Severe muscle pain</div>
+                        <div class="signal-reaction">PRR: 0.7 • Critical</div>
+                        <div class="signal-stats">
+                            <span>7 cases</span>
+                            <span>AI: 94%</span>
+                        </div>
+                    </div>
+                    <div class="signal-card-compact">
+                        <div class="signal-drug">Aspirin + GI bleeding</div>
+                        <div class="signal-reaction">PRR: 0.3 • Critical</div>
+                        <div class="signal-stats">
+                            <span>3 cases</span>
+                            <span>AI: 89%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Stats -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Cases</div>
+                    <div class="stat-value">38</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Critical Signals</div>
+                    <div class="stat-value">3</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Serious Events</div>
+                    <div class="stat-value">31</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unique Drugs</div>
+                    <div class="stat-value">12</div>
+                </div>
+            </div>
+            
+            <!-- Signals Table -->
+            <div class="signals-table-container">
+                <table class="signals-table">
+                    <thead>
+                        <tr>
+                            <th>Drug</th>
+                            <th>Reaction</th>
+                            <th>PRR</th>
+                            <th>Cases</th>
+                            <th>AI Score</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr onclick="showCaseModal()">
+                            <td>Aspirin</td>
+                            <td>Stomach bleeding</td>
+                            <td>0.9</td>
+                            <td>9</td>
+                            <td>97%</td>
+                            <td><span class="badge badge-critical">CRITICAL</span></td>
+                        </tr>
+                        <tr onclick="showCaseModal()">
+                            <td>Lipitor (Atorvastatin)</td>
+                            <td>Severe muscle pain and weakness</td>
+                            <td>0.7</td>
+                            <td>7</td>
+                            <td>94%</td>
+                            <td><span class="badge badge-critical">CRITICAL</span></td>
+                        </tr>
+                        <tr onclick="showCaseModal()">
+                            <td>Aspirin</td>
+                            <td>Severe stomach pain and GI bleeding</td>
+                            <td>0.3</td>
+                            <td>3</td>
+                            <td>89%</td>
+                            <td><span class="badge badge-critical">CRITICAL</span></td>
+                        </tr>
+                        <tr onclick="showCaseModal()">
+                            <td>Ibuprofen</td>
+                            <td>Severe headache and dizziness</td>
+                            <td>0.3</td>
+                            <td>3</td>
+                            <td>46%</td>
+                            <td><span class="badge badge-low">LOW</span></td>
+                        </tr>
+                        <tr onclick="showCaseModal()">
+                            <td>Warfarin</td>
+                            <td>Excessive bleeding and bruising</td>
+                            <td>0.3</td>
+                            <td>3</td>
+                            <td>99%</td>
+                            <td><span class="badge badge-critical">CRITICAL</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat Interface (Bottom) -->
+    <div class="chat-interface collapsed" id="chatInterface">
+        <div class="chat-header" onclick="toggleChat()">
+            <div class="chat-title">
+                💬 AI Investigation
+                <span class="annotation">
+                    <span class="annotation-note">CHAT APPEARS HERE! 🎯</span>
+                </span>
+            </div>
+            <span class="toggle-icon" id="chatToggleIcon">▲</span>
+        </div>
+        <div class="chat-messages" id="chatMessages" style="display: none;">
+            <div class="message ai">
+                Hi! I can help you analyze your pharmacovigilance data. Try asking:
+                <br>• "How many serious events?"
+                <br>• "Show me Aspirin cases"
+                <br>• "What's trending?"
+            </div>
+            <div class="message user">
+                How many serious events?
+            </div>
+            <div class="message ai">
+                There are <strong>31 serious events</strong> out of 38 total cases (82%).
+                <br><br>Would you like to see which drugs have the most serious events?
+            </div>
+        </div>
+        <div class="chat-input-area" style="display: none;">
+            <input type="text" class="chat-input" placeholder="Ask about your data... (e.g., 'Show me Aspirin cases')" />
+        </div>
+    </div>
+    
+    <!-- Duplicate Detection Modal -->
+    <div class="modal-overlay" id="duplicateModal">
+        <div class="modal">
+            <div class="modal-title">⚠️ Duplicate File Detected</div>
+            <div class="modal-content">
+                <p><strong>FAQs.pdf</strong> was already uploaded on <strong>Dec 5, 2025</strong></p>
+                <br>
+                <p><strong>File details:</strong></p>
+                <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                    <li>Original upload: Dec 5, 2025 at 10:30 AM</li>
+                    <li>Cases created: 10</li>
+                    <li>MD5 hash: a3b5c7d9...</li>
+                </ul>
+                <br>
+                <p>What would you like to do?</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeDuplicateModal()">Skip Upload</button>
+                <button class="btn btn-secondary">Replace Old File</button>
+                <button class="btn btn-primary" onclick="closeDuplicateModal()">Keep Both</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Case Detail Modal -->
+    <div class="modal-overlay" id="caseModal">
+        <div class="modal">
+            <div class="modal-title">Case Details</div>
+            <div class="modal-content">
+                <p><strong>Patient:</strong> 45 years, Male, USA</p>
+                <p><strong>Drug:</strong> Aspirin 100mg daily</p>
+                <p><strong>Reaction:</strong> Stomach bleeding</p>
+                <p><strong>Onset:</strong> January 15, 2024</p>
+                <p><strong>Serious:</strong> Yes</p>
+                <p><strong>Outcome:</strong> Recovering</p>
+                <br>
+                <p><strong>Narrative:</strong></p>
+                <p style="background: #334155; padding: 1rem; border-radius: 0.5rem; margin-top: 0.5rem;">
+                    Patient started Aspirin on January 1, 2024 for cardiovascular protection. 
+                    Two weeks later, developed severe stomach pain and was diagnosed with gastric bleeding. 
+                    Aspirin was discontinued and patient is currently recovering.
+                </p>
+                <br>
+                <p><strong>ICH E2B Status:</strong> ✅ Complete</p>
+                <p><strong>AI Confidence:</strong> 97%</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="closeCaseModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Toggle Priority Signals
+        function togglePrioritySignals() {
+            const signals = document.getElementById('prioritySignals');
+            const icon = document.getElementById('toggleIcon');
+            if (signals.style.display === 'none') {
+                signals.style.display = 'grid';
+                icon.textContent = '▼';
+            } else {
+                signals.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+        
+        // Toggle Chat
+        function toggleChat() {
+            const chat = document.getElementById('chatInterface');
+            const messages = document.getElementById('chatMessages');
+            const inputArea = document.querySelector('.chat-input-area');
+            const icon = document.getElementById('chatToggleIcon');
+            
+            if (chat.classList.contains('collapsed')) {
+                chat.classList.remove('collapsed');
+                chat.classList.add('expanded');
+                messages.style.display = 'block';
+                inputArea.style.display = 'block';
+                icon.textContent = '▼';
+            } else {
+                chat.classList.remove('expanded');
+                chat.classList.add('collapsed');
+                messages.style.display = 'none';
+                inputArea.style.display = 'none';
+                icon.textContent = '▲';
+            }
+        }
+        
+        // Show/Hide Modals
+        function showDuplicateModal() {
+            document.getElementById('duplicateModal').classList.add('active');
+        }
+        
+        function closeDuplicateModal() {
+            document.getElementById('duplicateModal').classList.remove('active');
+        }
+        
+        function showCaseModal() {
+            document.getElementById('caseModal').classList.add('active');
+        }
+        
+        function closeCaseModal() {
+            document.getElementById('caseModal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+CASE REPORT - MULTIPLE DRUGS
+
+Patient: Robert Johnson, 38 years old, male
+
+Medications:
+1. Ibuprofen 400mg three times daily (started 2024-11-10)
+2. Metformin 500mg twice daily (started 2024-09-01)
+3. Lisinopril 10mg once daily (started 2024-08-15)
+
+Adverse Events:
+Event 1:
+- Drug: Ibuprofen
+- Reaction: Severe headache and dizziness
+- Onset: 2024-11-25
+- Serious: No
+- Outcome: Recovered
+
+Event 2:
+- Drug: Metformin
+- Reaction: Nausea and vomiting
+- Onset: 2024-11-28
+- Serious: No
+- Outcome: Ongoing
+
+Both events reported to treating physician. 
+Ibuprofen reduced to as-needed basis. 
+Metformin dose adjustment under consideration.
+
