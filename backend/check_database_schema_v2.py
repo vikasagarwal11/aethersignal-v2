@@ -115,13 +115,13 @@ def check_table_and_get_info(table_name: str):
     
     return info
 
-def get_pv_cases_schema_from_backup():
-    """Get pv_cases schema from backup SQL files"""
-    backup_path = Path(__file__).parent.parent / "backup" / "aethersignal" / "database"
-    schema_file = backup_path / "00_schema.sql"
+def get_pv_cases_schema_from_reference():
+    """Get pv_cases schema from active database schema reference file"""
+    # Use active database folder instead of backup
+    db_path = Path(__file__).parent / "database" / "schema_reference.sql"
     
-    if schema_file.exists():
-        content = schema_file.read_text()
+    if db_path.exists():
+        content = db_path.read_text()
         # Look for pv_cases table definition
         if "CREATE TABLE" in content and "pv_cases" in content:
             # Extract columns (simplified parsing)
@@ -143,13 +143,13 @@ def get_pv_cases_schema_from_backup():
             return columns
     return None
 
-def get_file_upload_history_schema_from_backup():
-    """Get file_upload_history schema from backup SQL files"""
-    backup_path = Path(__file__).parent.parent / "backup" / "aethersignal" / "database"
-    schema_file = backup_path / "08_file_upload_history.sql"
+def get_file_upload_history_schema_from_reference():
+    """Get file_upload_history schema from active database schema reference file"""
+    # Use active database folder instead of backup
+    db_path = Path(__file__).parent / "database" / "schema_reference.sql"
     
-    if schema_file.exists():
-        content = schema_file.read_text()
+    if db_path.exists():
+        content = db_path.read_text()
         # Extract columns
         lines = content.split('\n')
         in_table = False
@@ -205,9 +205,9 @@ def main():
         columns = pv_info.get("columns")
         
         if not columns:
-            # Try to get from backup
-            print("\n   Table is empty, checking backup SQL files...")
-            columns = get_pv_cases_schema_from_backup()
+            # Try to get from schema reference file
+            print("\n   Table is empty, checking schema reference file...")
+            columns = get_pv_cases_schema_from_reference()
         
         if columns:
             print(f"\n✅ Columns found ({len(columns)} total):")
@@ -227,7 +227,7 @@ def main():
                 status = "✅ EXISTS" if exists else "❌ NOT FOUND"
                 print(f"   {status}: {col}")
         else:
-            print("\n   ⚠️  Could not determine columns (table empty and backup not found)")
+            print("\n   ⚠️  Could not determine columns (table empty and schema reference not found)")
     else:
         print("\n   ❌ pv_cases table does not exist")
     
@@ -241,9 +241,9 @@ def main():
         columns = fuh_info.get("columns")
         
         if not columns:
-            # Try to get from backup
-            print("\n   Table is empty, checking backup SQL files...")
-            columns = get_file_upload_history_schema_from_backup()
+            # Try to get from schema reference file
+            print("\n   Table is empty, checking schema reference file...")
+            columns = get_file_upload_history_schema_from_reference()
         
         if columns:
             print(f"\n✅ Columns ({len(columns)} total):")

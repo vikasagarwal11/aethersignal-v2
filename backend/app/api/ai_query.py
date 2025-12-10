@@ -12,12 +12,39 @@ from supabase import create_client, Client
 import json
 import re
 
+# Import QueryRouter and related components
+from app.core.signal_detection import QueryRouter, SignalQuerySpec, CompleteFusionEngine
+from app.core.signal_detection.metrics_provider import create_supabase_metrics_provider
+
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 
 # Initialize Supabase
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
+
+# Initialize QueryRouter for signal ranking (lazy initialization)
+_query_router: Optional[QueryRouter] = None
+_fusion_engine: Optional[CompleteFusionEngine] = None
+
+def get_query_router() -> QueryRouter:
+    """Lazy initialization of QueryRouter to avoid startup errors if Supabase not configured."""
+    global _query_router, _fusion_engine
+    if _query_router is None:
+        try:
+            _fusion_engine = CompleteFusionEngine()
+            _metrics_provider = create_supabase_metrics_provider(supabase)
+            _query_router = QueryRouter(
+                fusion_engine=_fusion_engine,
+                metrics_provider=_metrics_provider
+            )
+            print("[AI Query] QueryRouter initialized successfully")
+        except Exception as e:
+            print(f"[AI Query] Warning: QueryRouter initialization failed: {e}")
+            # Return a dummy router that will fail gracefully
+            _fusion_engine = CompleteFusionEngine()
+            _query_router = QueryRouter(fusion_engine=_fusion_engine)
+    return _query_router
 
 # Initialize Anthropic client
 anthropic_client = None
@@ -45,12 +72,75 @@ class QueryResponse(BaseModel):
     intent: Optional[str] = None
 
 
+def extract_drugs_and_reactions(query: str) -> tuple[List[str], List[str]]:
+    """
+    Extract drug names and reactions from natural language query.
+    
+    Returns:
+        (drugs: List[str], reactions: List[str])
+    """
+    query_lower = query.lower()
+    drugs = []
+    reactions = []
+    
+    # Common drug patterns
+    drug_patterns = [
+        r'\b(warfarin|aspirin|metformin|lisinopril|atorvastatin|simvastatin|omeprazole|amlodipine|metoprolol|sertraline)\b',
+        r'(?:drug|medication|on|taking)\s+(\w+)',
+        r'for\s+(\w+)\s+(?:adverse|event|reaction)',
+    ]
+    
+    for pattern in drug_patterns:
+        matches = re.findall(pattern, query_lower)
+        for match in matches:
+            if isinstance(match, tuple):
+                match = match[0] if match[0] else match[1] if len(match) > 1 else None
+            if match and match not in ['a', 'the', 'of', 'for', 'and', 'or', 'with']:
+                drugs.append(match.strip())
+    
+    # Common reaction patterns
+    reaction_patterns = [
+        r'\b(bleeding|hemorrhage|nausea|headache|dizziness|rash|chest pain|shortness of breath|diarrhea|vomiting|fatigue|pain)\b',
+        r'(?:adverse event|reaction|side effect|ae)\s+(?:of|is|was|are|were)\s+(\w+(?:\s+\w+)?)',
+        r'(?:showing|with|having)\s+(\w+(?:\s+\w+)?)\s+(?:symptom|reaction|event)',
+    ]
+    
+    for pattern in reaction_patterns:
+        matches = re.findall(pattern, query_lower)
+        for match in matches:
+            if isinstance(match, tuple):
+                match = match[0] if match[0] else match[1] if len(match) > 1 else None
+            if match and match not in ['a', 'the', 'of', 'for', 'and', 'or', 'with']:
+                reactions.append(match.strip())
+    
+    # Remove duplicates and empty strings
+    drugs = list(set([d for d in drugs if d and len(d) > 2]))
+    reactions = list(set([r for r in reactions if r and len(r) > 2]))
+    
+    return drugs, reactions
+
+
 def detect_query_intent(query: str) -> tuple[str, Dict[str, Any]]:
     """
     Detect the intent of the natural language query
     Returns: (intent_type, extracted_parameters)
     """
     query_lower = query.lower()
+    
+    # Signal ranking queries (NEW - route to fusion engine)
+    signal_keywords = [
+        "rank", "ranking", "prioritize", "priority", "signal", "signals",
+        "highest risk", "most serious", "emerging", "detect signals",
+        "show signals", "find signals", "identify signals"
+    ]
+    if any(keyword in query_lower for keyword in signal_keywords):
+        drugs, reactions = extract_drugs_and_reactions(query)
+        return ("rank_signals", {
+            "drugs": drugs,
+            "reactions": reactions,
+            "seriousness_only": "serious" in query_lower,
+            "time_window": "LAST_12_MONTHS" if "recent" in query_lower or "last" in query_lower else None
+        })
     
     # Count queries
     if any(word in query_lower for word in ["how many", "count", "number of", "total"]):
@@ -300,6 +390,116 @@ async def execute_list_query(intent: str, params: Dict[str, Any]) -> QueryRespon
         )
 
 
+async def execute_signal_ranking_query(intent: str, params: Dict[str, Any], original_query: str) -> QueryResponse:
+    """
+    Execute signal ranking query using QueryRouter and Fusion Engine.
+    
+    This routes natural language queries through:
+    NLP → SignalQuerySpec → QueryRouter → MetricsProvider → FusionEngine → Ranked Results
+    """
+    try:
+        # Get QueryRouter (lazy initialization)
+        router = get_query_router()
+        
+        # Extract parameters
+        drugs = params.get("drugs", [])
+        reactions = params.get("reactions", [])
+        seriousness_only = params.get("seriousness_only", False)
+        time_window = params.get("time_window", "LAST_12_MONTHS")
+        
+        # If no drugs/reactions extracted, try to extract from query
+        if not drugs or not reactions:
+            extracted_drugs, extracted_reactions = extract_drugs_and_reactions(original_query)
+            if extracted_drugs:
+                drugs = extracted_drugs
+            if extracted_reactions:
+                reactions = extracted_reactions
+        
+        # If still no drugs/reactions, return helpful message
+        if not drugs and not reactions:
+            return QueryResponse(
+                answer="I can help you rank signals by risk. Please specify:\n- Drug name(s) (e.g., 'warfarin', 'aspirin')\n- Reaction(s) (e.g., 'bleeding', 'nausea')\n\nExample: 'Rank signals for warfarin and bleeding'",
+                intent=intent,
+                follow_up_suggestions=[
+                    "Rank signals for warfarin and bleeding",
+                    "Show me highest risk signals",
+                    "Find emerging signals"
+                ]
+            )
+        
+        # Create SignalQuerySpec
+        spec = SignalQuerySpec(
+            task="rank_signals",
+            drugs=drugs,
+            reactions=reactions,
+            seriousness_only=seriousness_only,
+            time_window=time_window,
+            limit=50,
+            raw_text=original_query
+        )
+        
+        # Run query through router
+        results = router.run_query(spec)
+        
+        if not results:
+            return QueryResponse(
+                answer=f"No signals found matching your criteria.\n\nDrugs: {', '.join(drugs) if drugs else 'Any'}\nReactions: {', '.join(reactions) if reactions else 'Any'}",
+                intent=intent,
+                data={"drugs": drugs, "reactions": reactions, "count": 0},
+                follow_up_suggestions=[
+                    "Try different drugs or reactions",
+                    "Show me all signals",
+                    "What drugs do I have?"
+                ]
+            )
+        
+        # Format results
+        top_results = results[:10]  # Top 10 for display
+        result_summary = "\n".join([
+            f"{i+1}. **{r.drug} + {r.event}**: "
+            f"Fusion Score: {r.fusion_score:.3f}, "
+            f"Alert: {r.alert_level.upper()}"
+            for i, r in enumerate(top_results)
+        ])
+        
+        answer = f"Found **{len(results)} signals** matching your query:\n\n{result_summary}"
+        
+        if len(results) > 10:
+            answer += f"\n\n... and {len(results) - 10} more signals. Use filters to refine your search."
+        
+        return QueryResponse(
+            answer=answer,
+            intent=intent,
+            data={
+                "signals": [r.to_dict() for r in results],
+                "total": len(results),
+                "drugs": drugs,
+                "reactions": reactions,
+                "top_5": [r.to_dict() for r in results[:5]]
+            },
+            visualization="table",
+            follow_up_suggestions=[
+                f"Show me details for {results[0].drug} + {results[0].event}",
+                "Filter by serious events only",
+                "Show me more signals"
+            ]
+        )
+    
+    except Exception as e:
+        print(f"Error in signal ranking query: {e}")
+        import traceback
+        traceback.print_exc()
+        return QueryResponse(
+            answer=f"Sorry, I encountered an error while ranking signals: {str(e)}. Please try a more specific query.",
+            intent=intent,
+            follow_up_suggestions=[
+                "Try: 'Rank signals for warfarin and bleeding'",
+                "Show me all drugs",
+                "What reactions do I have?"
+            ]
+        )
+
+
 async def execute_existence_query(intent: str, params: Dict[str, Any]) -> QueryResponse:
     """Check if something exists"""
     drug = params.get("drug")
@@ -353,6 +553,14 @@ async def process_query(request: QueryRequest):
     - "Show me Aspirin adverse events"
     - "Are there any AE for drug XYZ?"
     - "What's trending?"
+    
+    Now supports signal ranking through QueryRouter → Fusion Engine.
+    
+    Examples:
+    - "How many serious events?"
+    - "Show me Aspirin adverse events"
+    - "Rank signals for warfarin and bleeding" (NEW - uses fusion engine)
+    - "Find highest risk signals" (NEW - uses fusion engine)
     """
     try:
         query = request.query.strip()
@@ -374,7 +582,8 @@ async def process_query(request: QueryRequest):
             return await execute_existence_query(intent, params)
         
         elif intent == "analyze_trend":
-            # TODO: Implement trend analysis
+            # TODO: PLACEHOLDER - Implement trend analysis
+            # PLACEHOLDER: Could use query router here for fusion-based trend analysis
             return QueryResponse(
                 answer="Trend analysis coming soon! For now, try asking about specific drugs or events.",
                 intent=intent,
@@ -384,6 +593,10 @@ async def process_query(request: QueryRequest):
                     "What are the most common reactions?"
                 ]
             )
+        
+        elif intent == "rank_signals":
+            # Route to QueryRouter for signal ranking
+            return await execute_signal_ranking_query(intent, params, query)
         
         else:
             # General query - use Claude AI if available

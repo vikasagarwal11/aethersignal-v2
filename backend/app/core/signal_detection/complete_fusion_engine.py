@@ -6,6 +6,8 @@ Combines three layers into a unified fusion score:
 1) Layer 0: Bayesian-Temporal (PRR/ROR/IC, MGPS/EBGM, temporal patterns, causality)
 2) Layer 1: Single-source quantum (rarity/seriousness/recency + interactions/tunneling)
 3) Layer 2: Multi-source quantum (frequency/severity/burst/novelty/consensus/mechanism)
+
+All thresholds and weights are configurable via the config system.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from .unified_signal_detection import (
     UnifiedSignalDetector,
     SignalStrength,
 )
+from .config import SignalDetectionConfig, config_manager
 
 logger = logging.getLogger(__name__)
 
@@ -68,16 +71,17 @@ class QuantumComponents:
 
 
 class SingleSourceQuantumScorer:
-    """Implements the streamlit-era quantum ranking algorithm."""
+    """Implements the streamlit-era quantum ranking algorithm with configurable thresholds."""
 
-    def __init__(self) -> None:
-        self.weights = {
-            "rarity": 0.40,
-            "seriousness": 0.35,
-            "recency": 0.20,
-            "count": 0.05,
-        }
-        # interaction thresholds are encoded directly in calculate_quantum_score
+    def __init__(self, config: Optional[SignalDetectionConfig] = None) -> None:
+        """
+        Initialize scorer with configuration.
+        
+        Args:
+            config: SignalDetectionConfig instance. If None, uses platform defaults.
+        """
+        self.config = config or config_manager.platform_config
+        self.weights = self.config.layer1_weights
 
     def extract_features(
         self,
@@ -100,32 +104,36 @@ class SingleSourceQuantumScorer:
         )
 
     def _calculate_seriousness_score(self, signal: Dict[str, Any]) -> float:
+        """Calculate seriousness score using configurable weights."""
+        weights = self.config.seriousness_weights
         score = 0.0
 
         seriousness = signal.get("seriousness")
         if seriousness is not None:
             seriousness_str = str(seriousness).lower().strip()
             if seriousness_str in ["1", "yes", "y", "true", "serious"]:
-                score += 0.5
+                score += weights["flag_base"]
 
         outcome = signal.get("outcome")
         if outcome is not None:
             outcome_str = str(outcome).lower()
             if any(term in outcome_str for term in ["death", "fatal", "died", "deceased"]):
-                score += 0.5
+                score += weights["death"]
             elif any(term in outcome_str for term in ["hospital", "hospitalized", "life", "threatening"]):
-                score += 0.3
+                score += weights["hospitalization"]
             elif any(term in outcome_str for term in ["disability", "disabled", "permanent"]):
-                score += 0.2
+                score += weights["disability"]
 
         serious_count = signal.get("serious_count", 0)
         total_count = signal.get("count", 1)
         if total_count > 0:
-            score += (serious_count / total_count) * 0.3
+            score += (serious_count / total_count) * weights["serious_fraction"]
 
         return min(1.0, score)
 
     def _calculate_recency_score(self, signal: Dict[str, Any]) -> float:
+        """Calculate recency score using configurable thresholds."""
+        recency_cfg = self.config.recency_config
         dates: List[datetime] = []
 
         if "dates" in signal and isinstance(signal["dates"], list):
@@ -145,13 +153,18 @@ class SingleSourceQuantumScorer:
 
         most_recent = max(dates)
         days_ago = (datetime.now() - most_recent).days
+        recent_days = recency_cfg["recent_days"]
+        moderate_days = recency_cfg["moderate_days"]
 
-        if days_ago <= 365:
-            recency_score = 1.0 - (days_ago / 365.0) * 0.5
-        elif days_ago <= 730:
-            recency_score = 0.5 - ((days_ago - 365) / 365.0) * 0.3
+        if days_ago <= recent_days:
+            # Exponential decay within recent period
+            recency_score = recency_cfg["recent_weight"] - (days_ago / recent_days) * 0.5
+        elif days_ago <= moderate_days:
+            # Moderate period
+            recency_score = recency_cfg["moderate_weight"] - ((days_ago - recent_days) / recent_days) * 0.3
         else:
-            recency_score = max(0.0, 0.2 - (days_ago - 730) / 3650.0)
+            # Old cases
+            recency_score = max(0.0, recency_cfg["old_weight"] - (days_ago - moderate_days) / 3650.0)
 
         return max(0.0, min(1.0, recency_score))
 
@@ -166,10 +179,15 @@ class SingleSourceQuantumScorer:
         return None
 
     def calculate_quantum_score(self, features: QuantumFeatures) -> Tuple[float, QuantumComponents]:
+        """Calculate quantum score using configurable thresholds and boosts."""
         count = features.count
         rarity = features.rarity
         seriousness = features.seriousness_score
         recency = features.recency_score
+
+        thresholds = self.config.interaction_thresholds
+        boosts = self.config.interaction_boosts
+        tunneling_cfg = self.config.tunneling_range
 
         base_score = (
             self.weights["rarity"] * rarity
@@ -178,10 +196,31 @@ class SingleSourceQuantumScorer:
             + self.weights["count"] * min(1.0, count / 10.0)
         )
 
-        interaction_rare_serious = 0.15 if rarity > 0.7 and seriousness > 0.5 else 0.0
-        interaction_rare_recent = 0.10 if rarity > 0.7 and recency > 0.7 else 0.0
-        interaction_serious_recent = 0.10 if seriousness > 0.7 and recency > 0.7 else 0.0
-        interaction_all_three = 0.20 if rarity > 0.6 and seriousness > 0.6 and recency > 0.6 else 0.0
+        # Interaction boosts (configurable thresholds)
+        interaction_rare_serious = (
+            boosts["rare_serious"]
+            if rarity > thresholds["rare_serious"] and seriousness > thresholds["rare_serious"]
+            else 0.0
+        )
+        interaction_rare_recent = (
+            boosts["rare_recent"]
+            if rarity > thresholds["rare_recent"] and recency > thresholds["rare_recent"]
+            else 0.0
+        )
+        interaction_serious_recent = (
+            boosts["serious_recent"]
+            if seriousness > thresholds["serious_recent"] and recency > thresholds["serious_recent"]
+            else 0.0
+        )
+        interaction_all_three = (
+            boosts["all_three"]
+            if (
+                rarity > thresholds["all_three"]
+                and seriousness > thresholds["all_three"]
+                and recency > thresholds["all_three"]
+            )
+            else 0.0
+        )
 
         interaction_term = (
             interaction_rare_serious
@@ -190,13 +229,18 @@ class SingleSourceQuantumScorer:
             + interaction_all_three
         )
 
+        # Tunneling boost (configurable range)
         tunneling_boost = 0.0
-        if 0.5 < rarity <= 0.7:
-            tunneling_boost += 0.05
-        if 0.5 < seriousness <= 0.7:
-            tunneling_boost += 0.05
-        if 0.5 < recency <= 0.7:
-            tunneling_boost += 0.05
+        tunneling_min = tunneling_cfg["min"]
+        tunneling_max = tunneling_cfg["max"]
+        boost_per_component = tunneling_cfg["boost_per_component"]
+        
+        if tunneling_min < rarity <= tunneling_max:
+            tunneling_boost += boost_per_component
+        if tunneling_min < seriousness <= tunneling_max:
+            tunneling_boost += boost_per_component
+        if tunneling_min < recency <= tunneling_max:
+            tunneling_boost += boost_per_component
 
         quantum_score = max(0.0, base_score + interaction_term + tunneling_boost)
 
@@ -222,17 +266,18 @@ class SingleSourceQuantumScorer:
 # ============================================================================
 
 class MultiSourceQuantumScorer:
-    """Implements the multi-source corroboration logic."""
+    """Implements the multi-source corroboration logic with weighted consensus."""
 
-    def __init__(self) -> None:
-        self.weights = {
-            "frequency": 0.25,
-            "severity": 0.20,
-            "burst": 0.15,
-            "novelty": 0.15,
-            "consensus": 0.15,
-            "mechanism": 0.10,
-        }
+    def __init__(self, config: Optional[SignalDetectionConfig] = None) -> None:
+        """
+        Initialize scorer with configuration.
+        
+        Args:
+            config: SignalDetectionConfig instance. If None, uses platform defaults.
+        """
+        self.config = config or config_manager.platform_config
+        self.weights = self.config.layer2_weights
+        self.source_priorities = self.config.source_priorities
 
     def compute_multi_source_score(
         self,
@@ -271,21 +316,22 @@ class MultiSourceQuantumScorer:
         return quantum_score, components
 
     def _compute_frequency_score(self, count: int) -> float:
+        """Calculate frequency score using configurable thresholds."""
         if count == 0:
             return 0.0
-        if count >= 100:
-            return 1.0
-        if count >= 50:
-            return 0.8
-        if count >= 20:
-            return 0.6
-        if count >= 10:
-            return 0.4
-        if count >= 5:
-            return 0.3
-        if count >= 3:
-            return 0.2
-        return 0.1
+        
+        thresholds = self.config.frequency_thresholds
+        # Sort thresholds in descending order
+        sorted_thresholds = sorted(
+            [(int(k), v["score"]) for k, v in thresholds.items()],
+            reverse=True
+        )
+        
+        for threshold_count, score in sorted_thresholds:
+            if count >= threshold_count:
+                return score
+        
+        return 0.0
 
     def _compute_severity_score(self, signal: Dict[str, Any]) -> float:
         if "severity" in signal:
@@ -306,51 +352,154 @@ class MultiSourceQuantumScorer:
         signal: Dict[str, Any],
         label_reactions: Optional[List[str]],
     ) -> float:
+        """Calculate novelty score using configurable thresholds."""
+        novelty_cfg = self.config.novelty_config
         reaction = signal.get("reaction", "")
 
+        # Check if on-label
+        is_labeled = False
         if label_reactions:
             is_labeled = any(
                 reaction.lower() in known.lower() or known.lower() in reaction.lower()
                 for known in label_reactions
             )
-            if is_labeled:
-                return 0.0
-
+        
         if "most_recent_date" in signal:
             try:
                 most_recent = datetime.fromisoformat(str(signal["most_recent_date"]))
                 days_ago = (datetime.now() - most_recent).days
-                if days_ago <= 30:
-                    return 1.0
-                if days_ago <= 90:
-                    return 0.8
-                if days_ago <= 180:
-                    return 0.6
-                if days_ago <= 365:
-                    return 0.4
-                return 0.2
+                
+                if not is_labeled:
+                    # Off-label: higher novelty scores
+                    if days_ago <= novelty_cfg["very_recent_days"]:
+                        return 1.0
+                    if days_ago <= novelty_cfg["recent_days"]:
+                        return 0.8
+                    if days_ago <= novelty_cfg["moderate_days"]:
+                        return 0.6
+                    if days_ago <= novelty_cfg["old_days"]:
+                        return 0.4
+                    return 0.2
+                else:
+                    # On-label: lower novelty (but recent spikes still matter)
+                    if days_ago <= novelty_cfg["on_label_recent_days"]:
+                        return 0.6
+                    if days_ago <= novelty_cfg["on_label_moderate_days"]:
+                        return 0.4
+                    return 0.2
             except Exception:
-                return 0.5
+                return 0.5 if not is_labeled else 0.2
 
-        return 0.5
+        return 0.5 if not is_labeled else 0.2
 
     def _compute_consensus_score(
         self,
         signal: Dict[str, Any],
         sources: Optional[List[str]],
     ) -> float:
+        """
+        Calculate weighted consensus score using source priorities.
+        
+        Implements ChatGPT's weighted consensus approach:
+        - Weight sources by type (FAERS > RWE > ClinicalTrials > PubMed > Social > Label)
+        - Boost if 3+ high-confidence sources agree
+        """
         if "sources" not in signal:
             return 0.0
 
-        unique_sources = len(set(signal["sources"]))
-        available_sources = len(sources) if sources else 7
+        signal_sources = signal.get("sources", [])
+        if not signal_sources:
+            return 0.0
 
-        consensus = min(unique_sources / available_sources, 1.0)
+        # Get source signals with type and confidence
+        source_signals = []
+        for source in signal_sources:
+            # Try to extract source type and confidence from signal
+            source_type = self._infer_source_type(source, signal)
+            confidence = signal.get("source_confidence", {}).get(source, 0.5)
+            strength = signal.get("source_strength", {}).get(source, 0.5)
+            
+            source_signals.append({
+                "type": source_type,
+                "confidence": confidence,
+                "strength": strength,
+            })
 
-        if signal.get("high_conf_source_count", 0) >= 3:
-            consensus = min(consensus + 0.2, 1.0)
+        # Normalize source priorities over present source types
+        present_types = {s["type"] for s in source_signals}
+        present_priorities = {
+            t: self.source_priorities.get(t, 0.1)
+            for t in present_types
+            if t in self.source_priorities
+        }
+        
+        if not present_priorities:
+            # Fallback to simple count-based consensus
+            unique_sources = len(set(signal_sources))
+            available_sources = len(sources) if sources else 7
+            consensus = min(unique_sources / available_sources, 1.0)
+        else:
+            # Normalize priorities
+            total_priority = sum(present_priorities.values())
+            normalized_priorities = {
+                t: p / total_priority
+                for t, p in present_priorities.items()
+            }
+            
+            # Calculate weighted consensus
+            weighted_strength = 0.0
+            high_conf_count = 0
+            boost_cfg = self.config.consensus_boost
+            
+            for source_sig in source_signals:
+                source_type = source_sig["type"]
+                if source_type in normalized_priorities:
+                    weight = normalized_priorities[source_type]
+                    confidence = source_sig["confidence"]
+                    strength = source_sig["strength"]
+                    
+                    weighted_strength += weight * strength * max(0.1, confidence)
+                    
+                    # Count high-confidence sources
+                    if (
+                        confidence >= boost_cfg["high_conf_threshold"]
+                        and strength >= boost_cfg["high_conf_strength_threshold"]
+                    ):
+                        high_conf_count += 1
+            
+            consensus = min(1.0, weighted_strength)
+            
+            # Boost if multiple high-confidence sources agree
+            if high_conf_count >= boost_cfg["min_high_conf_sources"]:
+                consensus = min(1.0, consensus + boost_cfg["boost_amount"])
 
         return consensus
+    
+    def _infer_source_type(self, source: str, signal: Dict[str, Any]) -> str:
+        """Infer source type from source name or signal metadata."""
+        source_lower = source.lower()
+        
+        # Check signal metadata first
+        source_type_map = signal.get("source_type_map", {})
+        if source in source_type_map:
+            return source_type_map[source]
+        
+        # Infer from source name
+        if "faers" in source_lower or "fda" in source_lower:
+            return "faers"
+        elif "rwe" in source_lower or "real-world" in source_lower:
+            return "rwe"
+        elif "clinical" in source_lower or "trial" in source_lower:
+            return "clinicaltrials"
+        elif "pubmed" in source_lower or "literature" in source_lower or "pub" in source_lower:
+            return "pubmed"
+        elif "social" in source_lower or "twitter" in source_lower or "reddit" in source_lower:
+            return "social"
+        elif "label" in source_lower or "package" in source_lower:
+            return "label"
+        else:
+            # Default to lowest priority
+            return "social"
 
 
 # ============================================================================
@@ -378,6 +527,18 @@ class CompleteFusionResult:
     alert_level: str = "none"
 
     percentile: Optional[float] = None
+
+    @property
+    def classical_score(self) -> Optional[float]:
+        """
+        Get classical/Bayesian score for compatibility with QueryRouter.
+        
+        Returns:
+            Composite score from bayesian_result if available, None otherwise.
+        """
+        if self.bayesian_result:
+            return getattr(self.bayesian_result, "composite_score", None)
+        return None
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -422,16 +583,32 @@ class CompleteFusionResult:
 class CompleteFusionEngine:
     """Combines Bayesian-Temporal + Quantum layers into one fusion score."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        config: Optional[SignalDetectionConfig] = None,
+        user_id: Optional[str] = None,
+        organization: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize fusion engine with configuration.
+        
+        Args:
+            config: SignalDetectionConfig instance. If None, loads from config manager.
+            user_id: User ID for user-level config overrides.
+            organization: Organization name for org-level config overrides.
+        """
+        # Get merged configuration
+        if config is None:
+            config = config_manager.get_config(
+                user_id=user_id,
+                organization=organization,
+            )
+        
+        self.config = config
         self.bayesian_detector = UnifiedSignalDetector()
-        self.quantum_scorer_layer1 = SingleSourceQuantumScorer()
-        self.quantum_scorer_layer2 = MultiSourceQuantumScorer()
-
-        self.fusion_weights = {
-            "bayesian": 0.35,
-            "quantum_layer1": 0.40,
-            "quantum_layer2": 0.25,
-        }
+        self.quantum_scorer_layer1 = SingleSourceQuantumScorer(config=config)
+        self.quantum_scorer_layer2 = MultiSourceQuantumScorer(config=config)
+        self.fusion_weights = config.fusion_weights
 
     def detect_signal(
         self,
@@ -534,15 +711,18 @@ class CompleteFusionEngine:
         return results
 
     def _determine_alert_level(self, fusion_score: float) -> str:
-        if fusion_score >= 0.95:
+        """Determine alert level using configurable thresholds."""
+        alert_levels = self.config.alert_levels
+        
+        if fusion_score >= alert_levels["critical"]:
             return "critical"
-        if fusion_score >= 0.80:
+        if fusion_score >= alert_levels["high"]:
             return "high"
-        if fusion_score >= 0.65:
+        if fusion_score >= alert_levels["moderate"]:
             return "moderate"
-        if fusion_score >= 0.45:
+        if fusion_score >= alert_levels["watchlist"]:
             return "watchlist"
-        if fusion_score >= 0.25:
+        if fusion_score >= alert_levels["low"]:
             return "low"
         return "none"
 

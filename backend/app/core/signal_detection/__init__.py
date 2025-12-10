@@ -32,6 +32,16 @@ from .complete_fusion_engine import (
     CompleteFusionEngine,
     CompleteFusionResult
 )
+from .query_router import (
+    QueryRouter,
+    SignalQuerySpec,
+    FusionResultSummary
+)
+from .config import (
+    SignalDetectionConfig,
+    ConfigManager,
+    config_manager
+)
 
 __all__ = [
     'BayesianSignalDetector',
@@ -50,5 +60,11 @@ __all__ = [
     'UnifiedSignalResult',
     'CompleteFusionEngine',
     'CompleteFusionResult',
+    'QueryRouter',
+    'SignalQuerySpec',
+    'FusionResultSummary',
+    'SignalDetectionConfig',
+    'ConfigManager',
+    'config_manager',
 ]
 

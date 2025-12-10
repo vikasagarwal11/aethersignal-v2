@@ -41,6 +41,7 @@ from app.api import (
     intelligent_ingest_api,
     signal_detection_api,
     quantum_fusion_api,
+    enhanced_ai_query_api,
 )
 app.include_router(signals.router)
 app.include_router(files.router)
@@ -51,6 +52,7 @@ app.include_router(similar_cases_api.router)  # Similar cases finder
 app.include_router(intelligent_ingest_api.router)  # Phase 3: Intelligent data ingestion
 app.include_router(signal_detection_api.router, prefix="/api/v1")  # Phase 3.5+3.6: Unified signal detection
 app.include_router(quantum_fusion_api.router, prefix="/api/v1")  # Quantum-Bayesian fusion detection
+app.include_router(enhanced_ai_query_api.router)  # Enhanced NLP + fusion endpoint
 
 @app.get("/")
 async def root():
