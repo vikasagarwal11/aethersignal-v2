@@ -40,11 +40,19 @@ Thumbs.db
 backup/
 
 # Large data files (should not be in git)
+# SNOMED CT files
 data/snomed_ct.db
 data/*.zip
+data/*.db
 snomed_extracted/
-faers_data/
+snomed_extracted/**
 
+# FAERS data files
+faers_data/
+faers_data/**
+
+# Large ASCII data files in faers_data
+faers_data/ASCII/*.txt 
 # Documentation files (keep only README.md)
 *.md
 !README.md
