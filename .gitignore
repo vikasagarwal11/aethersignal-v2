@@ -39,3 +39,15 @@ Thumbs.db
 # Backup directory
 backup/
 
+# Large data files (should not be in git)
+data/snomed_ct.db
+data/*.zip
+snomed_extracted/
+faers_data/
+
+# Documentation files (keep only README.md)
+*.md
+!README.md
+!frontend/README.md
+!backend/README.md
+
