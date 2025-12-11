@@ -29,7 +29,7 @@ export function UploadHistoryTracker() {
   const fetchHistory = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/upload/history?limit=50`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/upload/history?limit=50`);
       const data = await response.json();
       setHistory(data);
     } catch (error) {
@@ -43,7 +43,7 @@ export function UploadHistoryTracker() {
     if (!confirm('Delete this upload and all associated cases?')) return;
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/upload/${uploadId}`, { method: 'DELETE' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/upload/${uploadId}`, { method: 'DELETE' });
       fetchHistory();
     } catch (error) {
       console.error('Error deleting upload:', error);
@@ -54,7 +54,7 @@ export function UploadHistoryTracker() {
     if (!confirm('Merge these duplicate uploads?')) return;
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/upload/${primaryId}/merge`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/upload/${primaryId}/merge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ merge_with_id: duplicateId })
@@ -244,4 +244,3 @@ export function UploadHistoryTracker() {
     </div>
   );
 }
-

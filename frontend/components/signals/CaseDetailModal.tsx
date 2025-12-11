@@ -55,47 +55,56 @@ export function CaseDetailModal({ caseId, drugName, eventName, isOpen, onClose }
 
   useEffect(() => {
     if (isOpen && (caseId || (drugName && eventName))) {
+      const abortController = new AbortController();
+      
+      const fetchCaseDetails = async () => {
+        setIsLoading(true);
+        try {
+          // Fetch case details
+          let url = '';
+          if (caseId) {
+            url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/cases/${caseId}`;
+          } else if (drugName && eventName) {
+            url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/cases/by-drug-event?drug=${encodeURIComponent(drugName)}&event=${encodeURIComponent(eventName)}`;
+          }
+
+          const response = await fetch(url, { signal: abortController.signal });
+          if (!response.ok) throw new Error('Failed to fetch case');
+          
+          const data = await response.json();
+          setCaseData(Array.isArray(data) ? data[0] : data);
+
+          // Fetch related cases
+          if (data && data.id) {
+            const relatedResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/cases/${data.id}/similar?limit=5`,
+              { signal: abortController.signal }
+            );
+            if (relatedResponse.ok) {
+              const relatedData = await relatedResponse.json();
+              setRelatedCases(relatedData);
+            }
+          }
+        } catch (error: any) {
+          if (error.name !== 'AbortError') {
+            console.error('Error fetching case details:', error);
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
       fetchCaseDetails();
+
+      return () => {
+        abortController.abort();
+      };
     }
   }, [isOpen, caseId, drugName, eventName]);
 
-  const fetchCaseDetails = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch case details
-      let url = '';
-      if (caseId) {
-        url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/cases/${caseId}`;
-      } else if (drugName && eventName) {
-        url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/cases/by-drug-event?drug=${encodeURIComponent(drugName)}&event=${encodeURIComponent(eventName)}`;
-      }
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch case');
-      
-      const data = await response.json();
-      setCaseData(Array.isArray(data) ? data[0] : data);
-
-      // Fetch related cases
-      if (data) {
-        const relatedResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/cases/${data.id}/similar?limit=5`
-        );
-        if (relatedResponse.ok) {
-          const relatedData = await relatedResponse.json();
-          setRelatedCases(relatedData);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching case details:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleExport = async (format: 'pdf' | 'word') => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/cases/${caseData?.id}/export?format=${format}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/cases/${caseData?.id}/export?format=${format}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -160,7 +169,7 @@ export function CaseDetailModal({ caseId, drugName, eventName, isOpen, onClose }
             </h2>
             {caseData && (
               <p className="text-sm text-slate-400 mt-1">
-                {caseData.drug_name} → {caseData.reaction}
+                {caseData.drug_name} + {caseData.reaction}
               </p>
             )}
           </div>
@@ -466,13 +475,13 @@ export function CaseDetailModal({ caseId, drugName, eventName, isOpen, onClose }
                               </div>
                               <div className="text-sm text-slate-300">
                                 <span className="font-medium">{relatedCase.drug_name}</span>
-                                {' → '}
+                                {" + "}
                                 <span>{relatedCase.reaction}</span>
                               </div>
                               {(relatedCase.patient_age || relatedCase.patient_sex) && (
                                 <div className="text-xs text-slate-400 mt-2">
                                   {relatedCase.patient_age && `Age: ${relatedCase.patient_age}`}
-                                  {relatedCase.patient_age && relatedCase.patient_sex && ' • '}
+                                  {relatedCase.patient_age && relatedCase.patient_sex && ' | '}
                                   {relatedCase.patient_sex && `Sex: ${relatedCase.patient_sex}`}
                                 </div>
                               )}
@@ -568,4 +577,3 @@ export function CaseDetailModal({ caseId, drugName, eventName, isOpen, onClose }
     </div>
   );
 }
-

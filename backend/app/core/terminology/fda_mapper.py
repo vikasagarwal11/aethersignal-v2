@@ -24,8 +24,15 @@ import difflib
 
 logger = logging.getLogger(__name__)
 
+# Calculate path: from backend/app/core/terminology/fda_mapper.py → project root → data/
+# __file__ = backend/app/core/terminology/fda_mapper.py
+# dirname(__file__) = backend/app/core/terminology
+# dirname(dirname(__file__)) = backend/app/core
+# dirname(dirname(dirname(__file__))) = backend/app
+# dirname(dirname(dirname(dirname(__file__)))) = backend
+# dirname(dirname(dirname(dirname(dirname(__file__))))) = project root
 DEFAULT_TERMS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),  # backend/app/core → backend
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),  # backend/app/core/terminology → project root
     "data",
     "fda_adverse_event_codes_merged.json",
 )
@@ -88,8 +95,15 @@ class FDATerminologyMapper:
         if self._loaded:
             return
         if not os.path.exists(self.terms_path):
-            logger.error(f"FDA terminology file not found at: {self.terms_path}")
-            raise FileNotFoundError(self.terms_path)
+            logger.warning(f"FDA terminology file not found at: {self.terms_path}")
+            logger.warning("FDA terminology mapping will be disabled. To enable:")
+            logger.warning("  1. Extract FAERS codes: python backend/scripts/extract_faers_codes.py <REAC_FILE>")
+            logger.warning("  2. Or merge existing files: python backend/scripts/merge_faers_codes.py")
+            # Initialize empty index instead of raising error
+            self._pt_index = {}
+            self._all_terms_lower = []
+            self._loaded = True
+            return
 
         try:
             with open(self.terms_path, "r", encoding="utf-8") as f:
@@ -142,6 +156,10 @@ class FDATerminologyMapper:
         Returns:
             MappedTerm or None
         """
+        # Return None if file not loaded (graceful degradation)
+        if not self._loaded or not self._pt_index:
+            return None
+        
         # First try exact match
         result = self.map_term(term)
         if result and result.match_type == "exact":
@@ -220,8 +238,11 @@ class FDATerminologyMapper:
         3. Fuzzy match using difflib SequenceMatcher
 
         Returns:
-            MappedTerm or None if no reasonable match found.
+            MappedTerm or None if no reasonable match found or file not loaded.
         """
+        # Return None if file not loaded (graceful degradation)
+        if not self._loaded or not self._pt_index:
+            return None
         if not term:
             return None
 

@@ -36,6 +36,8 @@ from app.api import (
     files,
     sessions,
     ai_query,
+    analysis_api,
+    fusion_query,
     upload_duplicate_detection,
     similar_cases_api,
     intelligent_ingest_api,
@@ -46,7 +48,9 @@ from app.api import (
 app.include_router(signals.router)
 app.include_router(files.router)
 app.include_router(sessions.router)   # Session management
-app.include_router(ai_query.router)   # Natural language queries
+app.include_router(ai_query.router, prefix="/api/v1")   # Natural language queries (ChatGPT Phase 1)
+app.include_router(analysis_api.router, prefix="/api/v1")  # Analysis detail view + export (ChatGPT Phase 1)
+app.include_router(fusion_query.router, prefix="/api/v1")  # Fusion engine from filters (Phase 1.2)
 app.include_router(upload_duplicate_detection.router)  # Upload & duplicate detection
 app.include_router(similar_cases_api.router)  # Similar cases finder
 app.include_router(intelligent_ingest_api.router)  # Phase 3: Intelligent data ingestion

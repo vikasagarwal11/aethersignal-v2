@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Calendar, FileText, TrendingUp, RefreshCw, Settings, Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from "react";
+import { Calendar, FileText, TrendingUp, RefreshCw, Settings, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Session {
   id: string;
   name: string;
-  started_at?: string;  // Add started_at for date formatting
+  started_at?: string; // Optional start date
   files_count: number;
   cases_created: number;
 }
@@ -19,13 +19,13 @@ interface SessionSidebarProps {
   totalSignals?: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
-export function SessionSidebar({ 
-  onSessionChange, 
-  currentSessionId = 'all',
+export function SessionSidebar({
+  onSessionChange,
+  currentSessionId = "all",
   totalCases = 0,
-  totalSignals = 0
+  totalSignals = 0,
 }: SessionSidebarProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState(currentSessionId);
@@ -41,35 +41,30 @@ export function SessionSidebar({
 
   const fetchSessions = async () => {
     setIsLoading(true);
-    
+
     try {
-      // Get organization from localStorage (for multi-tenant support)
-      const organization = typeof window !== 'undefined' 
-        ? localStorage.getItem('organization') 
-        : null;
-      
-      // Build API URL with organization parameter
+      const organization = typeof window !== "undefined" ? localStorage.getItem("organization") : null;
+
       const url = new URL(`${API_BASE_URL}/api/v1/sessions/`);
       if (organization) {
-        url.searchParams.append('organization', organization);
+        url.searchParams.append("organization", organization);
       }
-      
+
       const response = await fetch(url.toString());
-      if (!response.ok) throw new Error('Failed to fetch sessions');
-      
+      if (!response.ok) throw new Error("Failed to fetch sessions");
+
       const data = await response.json();
-      
-      // Add "All Sessions" option
+
       const allSessionsOption: Session = {
-        id: 'all',
-        name: 'All Sessions',
+        id: "all",
+        name: "All Sessions",
         files_count: data.reduce((sum: number, s: Session) => sum + (s.files_count || 0), 0),
-        cases_created: data.reduce((sum: number, s: Session) => sum + (s.cases_created || 0), 0)
+        cases_created: data.reduce((sum: number, s: Session) => sum + (s.cases_created || 0), 0),
       };
-      
+
       setSessions([allSessionsOption, ...data]);
     } catch (err) {
-      console.error('Error fetching sessions:', err);
+      console.error("Error fetching sessions:", err);
     } finally {
       setIsLoading(false);
     }
@@ -83,67 +78,53 @@ export function SessionSidebar({
   };
 
   const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'Invalid Date';
-    
+    if (!dateString) return "Invalid Date";
+
     const date = new Date(dateString);
-    
-    // Check if date is valid
     if (isNaN(date.getTime())) {
-      return 'Invalid Date';
+      return "Invalid Date";
     }
-    
+
     const today = new Date();
     const isToday = date.toDateString() === today.toDateString();
-    
-    if (isToday) return 'Today';
-    
+    if (isToday) return "Today";
+
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
-  
+
   const getSessionDisplayName = (session: Session) => {
-    if (session.id === 'all') {
+    if (session.id === "all") {
       return session.name;
     }
-    
-    // If session has started_at, use it for date formatting
     if (session.started_at) {
       return formatDate(session.started_at);
     }
-    
-    // Otherwise, try to parse the name as a date (for auto-sessions like "Session 2024-12-08")
-    // Extract date from name if it matches pattern "Session YYYY-MM-DD"
     const dateMatch = session.name.match(/(\d{4}-\d{2}-\d{2})/);
     if (dateMatch) {
       return formatDate(dateMatch[1]);
     }
-    
-    // If name doesn't contain a date, just return the name (user-created session)
     return session.name;
   };
 
   return (
     <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col h-screen">
-      {/* Header */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            📅 Sessions
-          </h3>
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sessions</h3>
           <button
             onClick={fetchSessions}
             className="p-1 hover:bg-gray-700 rounded transition-colors"
             title="Refresh sessions"
           >
-            <RefreshCw className={`h-4 w-4 text-gray-400 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 text-gray-400 ${isLoading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* Sessions List */}
       <div className="flex-1 overflow-y-auto">
         {isLoading && sessions.length === 0 ? (
           <div className="p-4 text-center text-gray-400">
@@ -158,15 +139,13 @@ export function SessionSidebar({
                 onClick={() => handleSessionClick(session.id)}
                 className={`p-3 rounded-lg cursor-pointer transition-colors ${
                   selectedSessionId === session.id
-                    ? 'bg-primary-500/20 border border-primary-500'
-                    : 'bg-gray-700/50 hover:bg-gray-700'
+                    ? "bg-primary-500/20 border border-primary-500"
+                    : "bg-gray-700/50 hover:bg-gray-700"
                 }`}
               >
-                <div className="font-medium text-white text-sm">
-                  {getSessionDisplayName(session)}
-                </div>
+                <div className="font-medium text-white text-sm">{getSessionDisplayName(session)}</div>
                 <div className="text-xs text-gray-400 mt-1">
-                  {session.files_count} files • {session.cases_created} cases
+                  {session.files_count} files | {session.cases_created} cases
                 </div>
               </div>
             ))}
@@ -174,11 +153,8 @@ export function SessionSidebar({
         )}
       </div>
 
-      {/* Quick Actions */}
       <div className="p-4 border-t border-gray-700">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          🔍 Quick Actions
-        </h3>
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Actions</h3>
         <div className="space-y-2">
           <Button variant="ghost" size="sm" className="w-full justify-start" onClick={fetchSessions}>
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -195,19 +171,17 @@ export function SessionSidebar({
         </div>
       </div>
 
-      {/* Current Selection Summary */}
       {selectedSessionId && sessions.length > 0 && (
         <div className="p-4 bg-gray-900/50 border-t border-gray-700">
           <div className="text-xs text-gray-400 mb-1">Current View</div>
           <div className="text-sm font-medium text-white">
-            {sessions.find(s => s.id === selectedSessionId)?.name || 'All Sessions'}
+            {sessions.find((s) => s.id === selectedSessionId)?.name || "All Sessions"}
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            {totalCases} cases • {totalSignals} signals
+            {totalCases} cases | {totalSignals} signals
           </div>
         </div>
       )}
     </div>
   );
 }
-

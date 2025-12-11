@@ -42,7 +42,7 @@ interface AIPrioritySignalsProps {
   onSignalClick?: (signal: PrioritySignal) => void;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export function AIPrioritySignals({ 
   limit = 3, 
@@ -227,7 +227,7 @@ export function AIPrioritySignals({
 
               {/* Methods and Strength */}
               <div className="text-xs text-gray-400 mb-2">
-                Methods: {signal.overall.methods_flagged.join(', ')} • Strength: {signal.overall.signal_strength}
+                Methods: {signal.overall.methods_flagged.join(', ')} | Strength: {signal.overall.signal_strength}
               </div>
 
               {/* Case Count */}
@@ -246,4 +246,3 @@ export function AIPrioritySignals({
     </Card>
   );
 }
-

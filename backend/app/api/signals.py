@@ -159,23 +159,29 @@ async def get_signal_stats_fallback(organization: Optional[str], dataset: Option
     if dataset and dataset != "all":
         query = query.eq("source", dataset)
     if session_date and session_date != "all":
-        # Get file IDs for this session date
-        files_result = supabase.table("file_upload_history").select("id").gte(
-            "uploaded_at", f"{session_date}T00:00:00"
-        ).lt("uploaded_at", f"{session_date}T23:59:59").execute()
-        
-        if files_result.data:
-            file_ids = [f["id"] for f in files_result.data]
-            query = query.in_("source_file_id", file_ids)
+        # Validate that session_date is actually a date (YYYY-MM-DD format), not a UUID
+        # UUIDs are 36 characters, dates are 10 characters
+        if len(session_date) == 36 and "-" in session_date and session_date.count("-") == 4:
+            # This is a UUID, not a date - skip session filtering
+            print(f"[WARN] session_date is a UUID ({session_date}), not a date. Skipping session filter.")
         else:
-            # No files for this date, return empty stats
-            return SignalStats(
-                total_cases=0,
-                critical_signals=0,
-                serious_events=0,
-                unique_drugs=0,
-                unique_reactions=0
-            )
+            # Get file IDs for this session date
+            files_result = supabase.table("file_upload_history").select("id").gte(
+                "uploaded_at", f"{session_date}T00:00:00"
+            ).lt("uploaded_at", f"{session_date}T23:59:59").execute()
+            
+            if files_result.data:
+                file_ids = [f["id"] for f in files_result.data]
+                query = query.in_("source_file_id", file_ids)
+            else:
+                # No files for this date, return empty stats
+                return SignalStats(
+                    total_cases=0,
+                    critical_signals=0,
+                    serious_events=0,
+                    unique_drugs=0,
+                    unique_reactions=0
+                )
     
     result = query.execute()
     total_cases = result.count if hasattr(result, 'count') and result.count is not None else (len(result.data) if result.data else 0)
@@ -187,12 +193,17 @@ async def get_signal_stats_fallback(organization: Optional[str], dataset: Option
     if dataset and dataset != "all":
         serious_query = serious_query.eq("source", dataset)
     if session_date and session_date != "all":
-        files_result = supabase.table("file_upload_history").select("id").gte(
-            "uploaded_at", f"{session_date}T00:00:00"
-        ).lt("uploaded_at", f"{session_date}T23:59:59").execute()
-        if files_result.data:
-            file_ids = [f["id"] for f in files_result.data]
-            serious_query = serious_query.in_("source_file_id", file_ids)
+        # Validate that session_date is actually a date (YYYY-MM-DD format), not a UUID
+        if len(session_date) == 36 and "-" in session_date and session_date.count("-") == 4:
+            # This is a UUID, not a date - skip session filtering
+            print(f"[WARN] session_date is a UUID ({session_date}), not a date. Skipping session filter.")
+        else:
+            files_result = supabase.table("file_upload_history").select("id").gte(
+                "uploaded_at", f"{session_date}T00:00:00"
+            ).lt("uploaded_at", f"{session_date}T23:59:59").execute()
+            if files_result.data:
+                file_ids = [f["id"] for f in files_result.data]
+                serious_query = serious_query.in_("source_file_id", file_ids)
     serious_result = serious_query.eq("serious", True).execute()
     serious_events = serious_result.count if hasattr(serious_result, 'count') else len(serious_result.data) if serious_result.data else 0
     
@@ -256,106 +267,9 @@ async def get_signals(
     Uses PostgreSQL aggregation instead of Python loops
     """
     try:
-        # Try optimized RPC method first
-        try:
-            filters = []
-            if organization:
-                org_escaped = escape_sql_string(organization)
-                filters.append(f"organization = {org_escaped}")
-            
-            # Multi-user filtering (for team-level analysis)
-            if user_ids:
-                # Parse comma-separated user IDs
-                user_id_list = [uid.strip() for uid in user_ids.split(',') if uid.strip()]
-                if user_id_list:
-                    # Escape each user ID
-                    escaped_user_ids = [escape_sql_string(uid) for uid in user_id_list]
-                    user_ids_str = "', '".join(escaped_user_ids)
-                    filters.append(f"""upload_id IN (
-                        SELECT id FROM file_uploads 
-                        WHERE user_id IN ('{user_ids_str}')
-                    )""")
-            
-            if dataset and dataset != "all":
-                ds_escaped = escape_sql_string(dataset)
-                filters.append(f"source = {ds_escaped}")
-            if serious_only:
-                filters.append("serious = true")
-            if search:
-                # Escape search term for ILIKE
-                search_escaped = escape_sql_string(f"%{search}%")
-                filters.append(f"(drug_name ILIKE {search_escaped} OR reaction ILIKE {search_escaped})")
-            if session_date and session_date != "all":
-                # Filter by session date (file upload date)
-                date_escaped = escape_sql_string(session_date)
-                filters.append(f"""source_file_id IN (
-                    SELECT id FROM file_upload_history 
-                    WHERE DATE(uploaded_at) = {date_escaped}
-                )""")
-            
-            where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
-            
-            # OPTIMIZED: Database-side aggregation with GROUP BY
-            query = f"""
-            SELECT 
-                MIN(id)::text as id,
-                COALESCE(drug_name, 'Unknown') as drug,
-                COALESCE(reaction, 'Unknown') as reaction,
-                COUNT(*)::int as cases,
-                COUNT(*) FILTER (WHERE serious = true)::int as serious_count,
-                MAX(COALESCE(source, 'FAERS')) as dataset,
-                MAX(organization) as organization
-            FROM pv_cases
-            {where_clause}
-            GROUP BY drug_name, reaction
-            ORDER BY cases DESC
-            LIMIT {limit}
-            OFFSET {offset}
-            """
-            
-            result = supabase.rpc('exec_sql', {'query': query}).execute()
-            
-            if result.data:
-                signals = []
-                for row in result.data:
-                    cases = row.get('cases', 0) or 0
-                    serious_count = row.get('serious_count', 0) or 0
-                    
-                    # Calculate PRR (simplified)
-                    prr = cases * 0.1
-                    
-                    # Determine priority
-                    if cases >= 1000 or serious_count >= cases * 0.8:
-                        priority_level = "critical"
-                    elif cases >= 500 or serious_count >= cases * 0.5:
-                        priority_level = "high"
-                    elif cases >= 100:
-                        priority_level = "medium"
-                    else:
-                        priority_level = "low"
-                    
-                    # Filter by priority if specified
-                    if priority and priority_level != priority.lower():
-                        continue
-                    
-                    signals.append(Signal(
-                        id=row.get('id', ''),
-                        drug=row.get('drug', 'Unknown'),
-                        reaction=row.get('reaction', 'Unknown'),
-                        prr=round(prr, 2),
-                        cases=cases,
-                        priority=priority_level,
-                        serious=serious_count > 0,
-                        dataset=row.get('dataset', 'FAERS'),
-                        organization=row.get('organization')
-                    ))
-                
-                return signals
-        except Exception as rpc_error:
-            print(f"[DEBUG] RPC method failed, using fallback: {rpc_error}")
-        
-        # Fallback to original method
-        return await get_signals_fallback(organization, dataset, priority, serious_only, search, session_date, limit, offset)
+        # Use safe Supabase query builder instead of exec_sql to prevent SQL injection
+        # Fallback to Python-side aggregation (slower but secure)
+        return await get_signals_fallback(organization, dataset, priority, serious_only, search, session_date, limit, offset, user_ids)
         
     except Exception as e:
         print(f"Error fetching signals: {e}")
@@ -372,31 +286,56 @@ async def get_signals_fallback(
     search: Optional[str],
     session_date: Optional[str],
     limit: int,
-    offset: int
+    offset: int,
+    user_ids: Optional[str] = None
 ):
-    """Fallback to Python aggregation (slower but works without RPC)"""
+    """Fallback to Python aggregation (slower but secure - uses Supabase query builder)"""
     query = supabase.table("pv_cases").select("*")
     
     if organization:
         query = query.eq("organization", organization)
+    
+    # Multi-user filtering (for team-level analysis)
+    if user_ids:
+        # Parse comma-separated user IDs
+        user_id_list = [uid.strip() for uid in user_ids.split(',') if uid.strip()]
+        if user_id_list:
+            # Get file IDs for these users
+            files_result = supabase.table("file_uploads").select("id").in_("user_id", user_id_list).execute()
+            if files_result.data:
+                file_ids = [f["id"] for f in files_result.data]
+                query = query.in_("upload_id", file_ids)
+            else:
+                # No files for these users, return empty
+                return []
+    
     if dataset and dataset != "all":
         query = query.eq("source", dataset)
     if serious_only:
         query = query.eq("serious", True)
     
+    # Search filter - fetch all and filter in Python (Supabase doesn't support OR ilike easily)
+    # Note: For better performance with large datasets, consider using PostgreSQL full-text search
+    
     # Filter by session date if provided
     if session_date and session_date != "all":
-        # Get file IDs for this session date
-        files_result = supabase.table("file_upload_history").select("id").gte(
-            "uploaded_at", f"{session_date}T00:00:00"
-        ).lt("uploaded_at", f"{session_date}T23:59:59").execute()
-        
-        if files_result.data:
-            file_ids = [f["id"] for f in files_result.data]
-            query = query.in_("source_file_id", file_ids)
+        # Validate that session_date is actually a date (YYYY-MM-DD format), not a UUID
+        # UUIDs are 36 characters, dates are 10 characters
+        if len(session_date) == 36 and "-" in session_date and session_date.count("-") == 4:
+            # This is a UUID, not a date - skip session filtering
+            print(f"[WARN] session_date is a UUID ({session_date}), not a date. Skipping session filter.")
         else:
-            # No files for this date, return empty
-            return []
+            # Get file IDs for this session date
+            files_result = supabase.table("file_upload_history").select("id").gte(
+                "uploaded_at", f"{session_date}T00:00:00"
+            ).lt("uploaded_at", f"{session_date}T23:59:59").execute()
+            
+            if files_result.data:
+                file_ids = [f["id"] for f in files_result.data]
+                query = query.in_("source_file_id", file_ids)
+            else:
+                # No files for this date, return empty
+                return []
     
     # Fetch less data (was 10x limit, now just 2x for fallback)
     result = query.limit(min(limit * 2, 2000)).offset(offset).execute()

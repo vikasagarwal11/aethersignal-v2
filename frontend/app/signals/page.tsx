@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { toastSuccess, toastError } from "@/components/ui/toast";
 import { Navbar } from "@/components/layout/navbar";
 import { ChatInterface } from "@/components/signals/ChatInterface";
 import { SessionSidebar } from "@/components/signals/SessionSidebar";
+import { SessionAnalysesSidebar } from "@/components/signals/SessionAnalysesSidebar";
+import { SavedAnalysesList } from "@/components/signals/SavedAnalysesList";
 import { AIPrioritySignals } from "@/components/signals/AIPrioritySignals";
 import { MultiSelect } from "@/components/ui/multiselect";
 import {
@@ -86,9 +88,19 @@ interface ProcessingStatus {
   error?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export default function SignalExplorerPage() {
+  // Generate sessionId at page level to share between ChatInterface and SessionAnalysesSidebar
+  // Use useEffect to ensure it only runs on client side (crypto.randomUUID() not available in SSR)
+  const [sessionId, setSessionId] = useState<string>("");
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && !sessionId) {
+      setSessionId(crypto.randomUUID());
+    }
+  }, [sessionId]);
+  
   const [signals, setSignals] = useState<Signal[]>([]);
   const [stats, setStats] = useState<SignalStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,19 +113,13 @@ export default function SignalExplorerPage() {
   const [processing, setProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
   const [processingFiles, setProcessingFiles] = useState<Map<string, ProcessingStatus>>(new Map());
-  const [uploadId, setUploadId] = useState<string | null>(null);
   const [selectedDataset, setSelectedDataset] = useState<string>("all");
   const [datasets, setDatasets] = useState<Array<{value: string; label: string}>>([]);
   const [seriousOnly, setSeriousOnly] = useState(false);
   
   // New UI states
   const [prioritySignalsExpanded, setPrioritySignalsExpanded] = useState(true);
-  const [chatExpanded, setChatExpanded] = useState(false);
   const [selectedSession, setSelectedSession] = useState<string>("all");
-  const [sessions, setSessions] = useState<Array<{id: string; name: string; files_count: number; cases_created: number}>>([]);
-  const [chatMessages, setChatMessages] = useState<Array<{role: "user" | "ai"; content: string}>>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
   
   // Multi-tenant filtering states
   const [filterLevel, setFilterLevel] = useState<'user' | 'team' | 'organization'>('organization');
@@ -121,16 +127,16 @@ export default function SignalExplorerPage() {
   const [availableUsers, setAvailableUsers] = useState<Array<{id: string; name: string; email: string}>>([]);
   const [currentOrganization, setCurrentOrganization] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const pollingTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
-  // AI Priority Signals (top 3 most critical with high AI confidence)
+  // AI Priority Signals (top 5 most critical with high AI confidence)
   const prioritySignals = signals
     .filter((s) => s.priority === "critical" && (s.ai_confidence || 0) > 0.8)
-    .slice(0, 3);
+    .slice(0, 5); // Show up to 5 signals
 
   // Fetch datasets
   useEffect(() => {
     fetchDatasets();
-    fetchSessions();
     fetchAvailableUsers();
     // Get current user's organization (from auth or localStorage)
     const org = localStorage.getItem('organization') || 'default';
@@ -138,76 +144,30 @@ export default function SignalExplorerPage() {
     setCurrentOrganization(org);
     setCurrentUserId(userId);
   }, []);
-  
-  // Fetch sessions (with organization filter)
-  const fetchSessions = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (currentOrganization) {
-        params.append('organization', currentOrganization);
-      }
-      const response = await fetch(`${API_BASE_URL}/api/v1/sessions/?${params}`);
-      const data = await response.json();
-      setSessions(data || []);
-    } catch (error) {
-      console.error("Error fetching sessions:", error);
-    }
-  };
+
+  // Clean up polling timers on unmount
+  useEffect(() => {
+    return () => {
+      pollingTimeouts.current.forEach(clearTimeout);
+    };
+  }, []);
   
   // Fetch available users in organization (for team selection)
   const fetchAvailableUsers = async () => {
     try {
-      // This would typically come from an auth/user management API
-      // For now, we'll use a placeholder - in production, this would fetch from your user service
-      const mockUsers = [
-        { id: 'user1', name: 'John Doe', email: 'john@pharmacorp.com' },
-        { id: 'user2', name: 'Jane Smith', email: 'jane@pharmacorp.com' },
-        { id: 'user3', name: 'Bob Johnson', email: 'bob@pharmacorp.com' },
-      ];
-      setAvailableUsers(mockUsers);
+      // TODO: Replace with real API endpoint when available
+      // For now, return empty array - team filtering will be disabled until API is ready
+      // const response = await fetch(`${API_BASE_URL}/api/v1/users?organization=${currentOrganization}`);
+      // if (!response.ok) throw new Error("Failed to fetch users");
+      // const data = await response.json();
+      // setAvailableUsers(data);
+      setAvailableUsers([]);
     } catch (error) {
       console.error("Error fetching users:", error);
+      setAvailableUsers([]);
     }
   };
-
-  // Fetch signals and stats
-  useEffect(() => {
-    fetchData();
-  }, [selectedDataset, seriousOnly, selectedSession, filterLevel, selectedUsers, currentOrganization]);
-
-  // Debounced search - waits 500ms after user stops typing
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      if (search !== undefined) fetchData();
-    }, 500);
-    return () => clearTimeout(debounce);
-  }, [search]);
   
-  // Handle AI chat query
-  const handleChatQuery = async (query: string) => {
-    if (!query.trim()) return;
-    
-    setChatLoading(true);
-    setChatMessages(prev => [...prev, { role: "user", content: query }]);
-    setChatInput("");
-    
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/ai/query`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
-      
-      const data = await response.json();
-      setChatMessages(prev => [...prev, { role: "ai", content: data.answer || "Sorry, I couldn't process that query." }]);
-    } catch (error) {
-      console.error("Error querying AI:", error);
-      setChatMessages(prev => [...prev, { role: "ai", content: "Sorry, there was an error processing your query." }]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
   const fetchDatasets = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/signals/datasets`);
@@ -265,20 +225,38 @@ export default function SignalExplorerPage() {
       signalsParams.append("limit", "1000");
 
       const signalsResponse = await fetch(`${API_BASE_URL}/api/v1/signals?${signalsParams}`);
+      
+      // Check if response is ok and parse JSON
+      if (!signalsResponse.ok) {
+        const errorText = await signalsResponse.text();
+        console.error("Error fetching signals:", errorText);
+        throw new Error(`Failed to fetch signals: ${signalsResponse.status}`);
+      }
+      
       const signalsData = await signalsResponse.json();
+      
+      // Ensure signalsData is an array
+      if (!Array.isArray(signalsData)) {
+        console.error("Signals API returned non-array:", signalsData);
+        setSignals([]);
+        return;
+      }
 
       // Add AI confidence scores and trends (mock for now - will be real AI in production)
-      const signalsWithAI = (signalsData || []).map((s: Signal) => ({
+      // This ensures AI Priority Signals section can display signals
+      const signalsWithAI = signalsData.map((s: Signal) => ({
         ...s,
         ai_confidence:
-          s.priority === "critical"
-            ? 0.85 + Math.random() * 0.15
+          s.ai_confidence !== undefined
+            ? s.ai_confidence
+            : s.priority === "critical"
+            ? 0.85 + Math.random() * 0.15  // 0.85-1.0 for critical
             : s.priority === "high"
-            ? 0.7 + Math.random() * 0.15
+            ? 0.7 + Math.random() * 0.15   // 0.7-0.85 for high
             : s.priority === "medium"
-            ? 0.5 + Math.random() * 0.2
-            : 0.3 + Math.random() * 0.2,
-        trend: Math.random() > 0.5 ? "up" : Math.random() > 0.7 ? "down" : "stable",
+            ? 0.5 + Math.random() * 0.2    // 0.5-0.7 for medium
+            : 0.3 + Math.random() * 0.2,   // 0.3-0.5 for low
+        trend: s.trend ?? (Math.random() > 0.5 ? "up" : Math.random() > 0.7 ? "down" : "stable"),
       }));
 
       setSignals(signalsWithAI);
@@ -288,7 +266,38 @@ export default function SignalExplorerPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDataset, seriousOnly, search]);
+  }, [
+    selectedDataset,
+    seriousOnly,
+    selectedSession,
+    filterLevel,
+    selectedUsers.join(","),
+    currentOrganization,
+    currentUserId,
+  ]);
+
+  // Fetch signals and stats
+  useEffect(() => {
+    fetchData();
+  }, [
+    selectedDataset,
+    seriousOnly,
+    selectedSession,
+    filterLevel,
+    selectedUsers.join(","),
+    currentOrganization,
+    currentUserId,
+  ]);
+
+  // Debounced search - waits 500ms after user stops typing
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (search !== undefined) {
+        fetchData();
+      }
+    }, 500);
+    return () => clearTimeout(debounce);
+  }, [search]);
 
   // Poll processing status
   const pollProcessingStatus = useCallback(async (fileId: string) => {
@@ -334,7 +343,8 @@ export default function SignalExplorerPage() {
 
       // Continue polling if not completed or failed
       if (status.status !== "completed" && status.status !== "failed") {
-        setTimeout(() => pollProcessingStatus(fileId), 2000);
+        const timeoutId = setTimeout(() => pollProcessingStatus(fileId), 2000);
+        pollingTimeouts.current.push(timeoutId);
       }
     } catch (error) {
       console.error("Error polling status:", error);
@@ -364,7 +374,6 @@ export default function SignalExplorerPage() {
       }
 
       const result = await response.json();
-      setUploadId(result.file_id);
 
       toastSuccess("Upload Started!", `Processing ${file.name}...`);
 
@@ -455,7 +464,8 @@ export default function SignalExplorerPage() {
 
       // Continue polling if not completed or failed
       if (status.status !== "completed" && status.status !== "failed") {
-        setTimeout(() => pollFileStatus(fileId, filename), 2000);
+        const timeoutId = setTimeout(() => pollFileStatus(fileId, filename), 2000);
+        pollingTimeouts.current.push(timeoutId);
       } else if (status.status === "completed") {
         toastSuccess(
           "Processing Complete!",
@@ -641,16 +651,27 @@ export default function SignalExplorerPage() {
 
               <div className="flex flex-1 overflow-hidden">
                 {/* Session Sidebar */}
-                <SessionSidebar
-                  onSessionChange={setSelectedSession}
-                  currentSessionId={selectedSession}
-                  totalCases={stats?.total_cases || 0}
-                  totalSignals={signals.length}
-                />
+            <SessionSidebar
+              onSessionChange={(sessionIdOrDate) => {
+                // SessionSidebar may pass either a UUID (session ID) or a date string
+                // If it's "all", keep it as is
+                // If it's a UUID, we need to convert it to a date by looking up the session
+                // For now, just pass it through - backend will handle UUID detection
+                setSelectedSession(sessionIdOrDate);
+              }}
+              currentSessionId={selectedSession}
+              totalCases={stats?.total_cases || 0}
+              totalSignals={signals.length}
+            />
+                
+                {/* Saved Analyses Sidebar */}
+                <div className="w-64 border-l bg-gray-50 p-3">
+                  <SavedAnalysesList sessionId={sessionId} />
+                </div>
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="container mx-auto px-6 py-6">
+        <div className="container mx-auto px-6 py-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {stats ? (
@@ -688,56 +709,74 @@ export default function SignalExplorerPage() {
         </div>
 
         {/* Compact Collapsible AI Priority Signals */}
-        {prioritySignals.length > 0 && (
-          <div className="mb-4 border-b border-gray-700 bg-gray-800/50">
-            <div 
-              className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800 transition-colors"
-              onClick={() => setPrioritySignalsExpanded(!prioritySignalsExpanded)}
-            >
-              <div className="flex items-center gap-2">
-                {prioritySignalsExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                )}
-                <Brain className="h-5 w-5 text-primary-500" />
-                <h2 className="text-lg font-semibold text-white">AI Priority Signals</h2>
+        <div className="mb-4 border-b border-gray-700 bg-gray-800/50">
+          <div 
+            className="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-800 transition-colors"
+            onClick={() => setPrioritySignalsExpanded(!prioritySignalsExpanded)}
+          >
+            <div className="flex items-center gap-1.5">
+              {prioritySignalsExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
+              )}
+              <Brain className="h-4 w-4 text-primary-500" />
+              <h2 className="text-sm font-semibold text-white">AI Priority Signals</h2>
+              {prioritySignals.length > 0 && (
                 <Badge variant="quantum" size="sm">
                   {prioritySignals.length}
                 </Badge>
-              </div>
-              <span className="text-xs text-gray-400">Click to {prioritySignalsExpanded ? "collapse" : "expand"}</span>
+              )}
             </div>
-            
-            {prioritySignalsExpanded && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4">
-                {prioritySignals.map((signal) => (
-                  <Card
-                    key={signal.id}
-                    className="border-l-4 border-l-danger-500 bg-danger-500/10 hover:bg-danger-500/20 transition-colors cursor-pointer"
-                    padding="sm"
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h3 className="text-sm font-semibold text-white mb-1">
-                            {signal.drug} + {signal.reaction}
-                          </h3>
-                          <p className="text-xs text-gray-300">
-                            PRR: {signal.prr.toFixed(1)} • {signal.cases} cases
+            <span className="text-[10px] text-gray-400">
+              Click to {prioritySignalsExpanded ? "collapse" : "expand"}
+            </span>
+          </div>
+          
+          {prioritySignalsExpanded && (
+            <>
+              {prioritySignals.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-2 p-2">
+                  {prioritySignals.map((signal) => (
+                    <Card
+                      key={signal.id}
+                      className="border-l-2 border-l-danger-500 bg-danger-500/10 hover:bg-danger-500/20 transition-colors cursor-pointer"
+                      padding="sm"
+                    >
+                      <CardContent className="p-2">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-start justify-between gap-1">
+                            <h3 className="text-xs font-semibold text-white line-clamp-2 flex-1">
+                              {signal.drug} + {signal.reaction}
+                            </h3>
+                            <Badge variant="quantum" size="sm" className="shrink-0 text-[9px]">
+                              {((signal.ai_confidence || 0) * 100).toFixed(0)}%
+                            </Badge>
+                          </div>
+                          <p className="text-[10px] text-gray-300">
+                            PRR: {signal.prr.toFixed(1)} | {signal.cases} cases
                           </p>
                         </div>
-                        <Badge variant="quantum" size="sm" className="ml-2">
-                          {((signal.ai_confidence || 0) * 100).toFixed(0)}%
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-gray-400 text-xs">
+                  <Brain className="h-6 w-6 mx-auto mb-2 text-gray-500" />
+                  <p className="font-medium mb-1">No AI Priority Signals</p>
+                  <p className="text-[10px] text-gray-500">
+                    {signals.length === 0 
+                      ? "No signals found in the database. Upload data to see priority signals."
+                      : signals.filter(s => s.priority === "critical").length === 0
+                      ? "No critical signals found. AI Priority Signals requires signals with 'critical' priority and AI confidence > 80%."
+                      : `Found ${signals.filter(s => s.priority === "critical").length} critical signal(s), but none have AI confidence > 80%.`}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Main Table Section */}
         <Card>
@@ -875,23 +914,31 @@ export default function SignalExplorerPage() {
                           <label className="text-xs font-medium text-gray-400 mb-2 block">
                             Select Team Members
                           </label>
-                          <MultiSelect
-                            options={availableUsers.map(user => ({
-                              id: user.id,
-                              label: user.name,
-                              email: user.email
-                            }))}
-                            selected={selectedUsers}
-                            onSelectionChange={setSelectedUsers}
-                            placeholder="Search and select team members..."
-                            searchPlaceholder="Search by name or email..."
-                            emptyMessage="No team members found."
-                            className="bg-gray-800 border-gray-700"
-                          />
-                          {selectedUsers.length === 0 && (
+                          {availableUsers.length === 0 ? (
                             <p className="text-xs text-gray-500 mt-2">
-                              Select at least one team member to filter
+                              Team filtering is not yet available. Please use "My Files Only" or "All Organization" instead.
                             </p>
+                          ) : (
+                            <>
+                              <MultiSelect
+                                options={availableUsers.map(user => ({
+                                  id: user.id,
+                                  label: user.name,
+                                  email: user.email
+                                }))}
+                                selected={selectedUsers}
+                                onSelectionChange={setSelectedUsers}
+                                placeholder="Search and select team members..."
+                                searchPlaceholder="Search by name or email..."
+                                emptyMessage="No team members found."
+                                className="bg-gray-800 border-gray-700"
+                              />
+                              {selectedUsers.length === 0 && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  Select at least one team member to filter
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
@@ -1138,7 +1185,7 @@ export default function SignalExplorerPage() {
                     <span className="font-semibold">Click to upload</span> or drag and drop
                   </p>
                   <p className="text-xs text-gray-500 text-center">
-                    📄 PDF • 📧 Email • 📝 Word • 📊 Excel • 🗜️ ZIP • 📷 Images • 🎤 Audio
+                     PDF | Email | Word | Excel | ZIP | Images | Audio
                   </p>
                   <p className="text-xs text-primary-400 mt-2">
                     Select multiple files - Our AI handles any format automatically
@@ -1169,13 +1216,21 @@ export default function SignalExplorerPage() {
         </DialogContent>
       </Dialog>
 
-              {/* Chat Interface Component */}
-              <ChatInterface 
-                onQuerySubmit={(query) => {
-                  // Optionally refresh data after query
-                  console.log('Query submitted:', query);
-                }}
-              />
+              {/* Chat Interface Component with shared sessionId - Fixed width container */}
+              <div className="flex gap-3 mt-4">
+                <div className="w-80 shrink-0">
+                  <ChatInterface 
+                    sessionId={sessionId}
+                    onQuerySubmit={(query) => {
+                      // Optionally refresh data after query
+                      console.log('Query submitted:', query);
+                    }}
+                  />
+                </div>
+                <div className="w-56 shrink-0">
+                  <SessionAnalysesSidebar sessionId={sessionId} />
+                </div>
+              </div>
     </div>
   );
 }

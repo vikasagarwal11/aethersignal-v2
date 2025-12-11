@@ -14,7 +14,7 @@ Date: 2024-12-08
 Version: 1.0.0
 """
 
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime, timedelta

@@ -30,7 +30,9 @@ export const KPICard = React.forwardRef<HTMLDivElement, KPICardProps>(
     },
     ref
   ) => {
-    const formatValue = (val: string | number) => {
+    const formatValue = (val: string | number | undefined | null) => {
+      // Handle null/undefined values
+      if (val === null || val === undefined) return "0";
       if (typeof val === "string") return val;
 
       switch (format) {
@@ -75,7 +77,7 @@ export const KPICard = React.forwardRef<HTMLDivElement, KPICardProps>(
       <Card
         ref={ref}
         variant="default"
-        padding="md"
+        padding="sm"
         className={cn("relative overflow-hidden", className)}
       >
         {/* Background gradient for visual interest */}
@@ -83,34 +85,34 @@ export const KPICard = React.forwardRef<HTMLDivElement, KPICardProps>(
 
         <div className="relative">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
               {icon && (
-                <div className="p-2 rounded-lg bg-gray-700/50 text-primary-400">
-                  {icon}
+                <div className="p-1.5 rounded-lg bg-gray-700/50 text-primary-400">
+                  {React.cloneElement(icon as React.ReactElement, { className: "h-4 w-4" })}
                 </div>
               )}
-              <h3 className="text-sm font-medium text-gray-400">{title}</h3>
+              <h3 className="text-xs font-medium text-gray-400">{title}</h3>
             </div>
           </div>
 
           {/* Value */}
-          <div className="mb-2">
-            <div className="text-3xl font-bold text-white">
+          <div className="mb-1">
+            <div className="text-2xl font-bold text-white">
               {formatValue(value)}
             </div>
           </div>
 
           {/* Trend and Change */}
           {(change !== undefined || trend) && (
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-1.5 mb-1">
               <div
                 className={cn(
-                  "flex items-center gap-1 text-sm font-medium",
+                  "flex items-center gap-0.5 text-xs font-medium",
                   getTrendColor()
                 )}
               >
-                {getTrendIcon()}
+                {getTrendIcon() && React.cloneElement(getTrendIcon() as React.ReactElement, { className: "h-3 w-3" })}
                 {change !== undefined && (
                   <span>
                     {change > 0 ? "+" : ""}
@@ -119,7 +121,7 @@ export const KPICard = React.forwardRef<HTMLDivElement, KPICardProps>(
                 )}
               </div>
               {description && (
-                <span className="text-xs text-gray-400">{description}</span>
+                <span className="text-[10px] text-gray-400">{description}</span>
               )}
             </div>
           )}

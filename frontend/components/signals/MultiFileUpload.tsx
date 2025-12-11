@@ -75,7 +75,7 @@ export function MultiFileUpload({ onUploadComplete, onSessionCreated }: MultiFil
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       // Check against server
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/upload/check-duplicate`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/upload/check-duplicate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -177,7 +177,7 @@ export function MultiFileUpload({ onUploadComplete, onSessionCreated }: MultiFil
         ));
       });
 
-      xhr.open('POST', `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/upload/`);
+      xhr.open('POST', `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/upload/`);
       xhr.send(formData);
 
     } catch (error) {
@@ -232,7 +232,7 @@ export function MultiFileUpload({ onUploadComplete, onSessionCreated }: MultiFil
       formData.append('duplicate_action', action);
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/upload/`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/upload/`, {
           method: 'POST',
           body: formData
         });
@@ -542,4 +542,3 @@ export function MultiFileUpload({ onUploadComplete, onSessionCreated }: MultiFil
     </div>
   );
 }
-
