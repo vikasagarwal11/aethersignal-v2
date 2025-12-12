@@ -51,7 +51,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "Courier New", "monospace"],
+        mono: ["JetBrains Mono", "Courier New", "monospace"],
       },
       boxShadow: {
         sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
