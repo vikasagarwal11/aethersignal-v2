@@ -2,30 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
-/* App-shell layout: prevent the browser window from scrolling. Individual columns scroll internally. */
-html,
-body {
+html, body {
   height: 100%;
   overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+/* =========================
+   AetherSignal Theme Tokens
+   Light = Executive review (sharp, cool, premium - blue-indigo personality)
+   Dark  = Analyst immersion (high contrast, focused)
+   ========================= */
+
+/* Light (improved — sharper, cooler, more premium) */
+:root {
+  /* Backgrounds — add very subtle cool tint instead of pure white */
+  --bg: #F8FAFF;              /* very light blue-white (cool base) */
+  --panel: #FFFFFF;           /* keep pure white cards */
+  --panel-2: #F0F4FF;         /* subtle blue tint for secondary (replaces grayish) */
+  --panel-3: #E6ECFF;         /* deeper blue tint for depth */
+
+  /* Text — slightly cooler/dark for better contrast */
+  --text: #1E293B;            /* slate-800 — sharper than #0B1220 */
+  --muted: #475569;           /* slate-700 */
+  --muted-2: #64748B;         /* slate-600 */
+
+  /* Borders + shadows — softer but visible, blue-tinted */
+  --border: rgba(59, 130, 246, 0.15);     /* subtle blue border */
+  --border-strong: rgba(59, 130, 246, 0.25);
+  --shadow: 0 1px 3px rgba(59, 130, 246, 0.08), 0 4px 12px rgba(59, 130, 246, 0.06);  /* card elevation with subtle inner shadow */
+
+  /* Accent — keep blue-purple but make it pop more */
+  --accent: #4F46E5;          /* indigo-600 — cooler, sharper than #2563EB */
+  --accent-hover: #818CF8;    /* indigo-400 for hover states - brighter */
+  --accent-hover-bright: #A5B4FC; /* indigo-300 - even brighter for buttons */
+  --accent-weak: rgba(79, 70, 229, 0.12); /* indigo tint */
+
+  /* Risk colors — keep but make backgrounds more visible */
+  --risk-critical: #DC2626;   /* red-600 */
+  --risk-critical-bg: rgba(220, 38, 38, 0.12);
+
+  --risk-high: #EA580C;      /* orange-600 */
+  --risk-high-bg: rgba(234, 88, 12, 0.12);
+
+  --risk-medium: #818CF8;    /* indigo-400 for medium — ties more to accent */
+  --risk-medium-bg: rgba(129, 140, 248, 0.12);
+
+  /* Scrollbars */
+  --scrollbar-thumb: rgba(59, 130, 246, 0.22);  /* blue-tinted to match theme */
+  --scrollbar-track: rgba(59, 130, 246, 0.06);
 }
 
+/* Dark overrides (activated by <html class="dark">) */
+:root.dark {
+  --bg: #0B0E14;
+  --panel: #10141C;
+  --panel-2: #151A22;
+  --panel-3: #1A2030;
+
+  --text: #F5F7FB;
+  --muted: #A7B0C0;
+  --muted-2: #8E98AA;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+
+  --accent: #60A5FA;
+  --accent-hover: #93C5FD;    /* light-blue-300 for hover in dark mode */
+  --accent-hover-bright: #BFDBFE; /* light-blue-200 - brighter for buttons in dark mode */
+  --accent-weak: rgba(96, 165, 250, 0.12);
+
+  --risk-critical: #EF4444;
+  --risk-critical-bg: rgba(239, 68, 68, 0.16);
+
+  --risk-high: #FEC84B;
+  --risk-high-bg: rgba(245, 158, 11, 0.16);
+
+  --risk-medium: #CBD5E1;
+  --risk-medium-bg: rgba(148, 163, 184, 0.12);
+
+  --scrollbar-thumb: rgba(148, 163, 184, 0.26);
+  --scrollbar-track: rgba(15, 17, 21, 0.60);
+}
+
+/* App shell helper */
+.aether-shell {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Text hierarchy — make headers bolder for premium feel */
+h1, h2, .font-semibold {
+  font-weight: 600;
+}
+
+/* Scrollbars */
+.custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: var(--scrollbar-thumb);
   border-radius: 999px;
-  border: 2px solid rgba(15, 17, 21, 0.9);
+  border: 2px solid var(--panel);
 }
+.custom-scrollbar::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 17, 21, 0.6);
-}
-
-/* Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.25) rgba(15, 17, 21, 0.6);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }

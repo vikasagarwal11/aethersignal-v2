@@ -321,3 +321,161 @@ export const signalTableRows: SignalTableRow[] = [
   { id: "row-56", drug: "Pregabalin", reaction: "Peripheral edema", prr: "2.5", cases: 84, serious: "No", priority: "Medium" },
 ];
 
+// =========================
+// Trajectory Data (Time-Series for Charts)
+// =========================
+
+export type TrajectoryDataPoint = {
+  date: string; // Format: "YYYY-MM"
+  cases: number;
+  lower: number; // Confidence band lower bound
+  upper: number; // Confidence band upper bound
+};
+
+export type TrajectoryData = {
+  historical: TrajectoryDataPoint[];
+  forecast: {
+    noAction: TrajectoryDataPoint[];
+    intervention: TrajectoryDataPoint[];
+  };
+};
+
+// Per-signal trajectory data (realistic mock for prototype)
+export const trajectoryDataBySignal: Record<string, TrajectoryData> = {
+  aspirin_gi_bleeding: {
+    historical: [
+      { date: "2025-01", cases: 120, lower: 110, upper: 130 },
+      { date: "2025-02", cases: 135, lower: 125, upper: 145 },
+      { date: "2025-03", cases: 148, lower: 135, upper: 160 },
+      { date: "2025-04", cases: 165, lower: 150, upper: 180 },
+      { date: "2025-05", cases: 182, lower: 165, upper: 200 },
+      { date: "2025-06", cases: 205, lower: 185, upper: 225 },
+      { date: "2025-07", cases: 234, lower: 210, upper: 258 },
+    ],
+    forecast: {
+      noAction: [
+        { date: "2025-08", cases: 265, lower: 235, upper: 295 },
+        { date: "2025-09", cases: 298, lower: 260, upper: 335 },
+        { date: "2025-10", cases: 335, lower: 290, upper: 380 },
+        { date: "2025-11", cases: 375, lower: 320, upper: 430 },
+        { date: "2025-12", cases: 420, lower: 350, upper: 490 },
+      ],
+      intervention: [
+        { date: "2025-08", cases: 245, lower: 220, upper: 270 },
+        { date: "2025-09", cases: 260, lower: 230, upper: 290 },
+        { date: "2025-10", cases: 275, lower: 240, upper: 310 },
+        { date: "2025-11", cases: 285, lower: 245, upper: 325 },
+        { date: "2025-12", cases: 295, lower: 250, upper: 340 },
+      ],
+    },
+  },
+  warfarin_internal_hemorrhage: {
+    historical: [
+      { date: "2025-01", cases: 95, lower: 85, upper: 105 },
+      { date: "2025-02", cases: 108, lower: 98, upper: 118 },
+      { date: "2025-03", cases: 125, lower: 115, upper: 135 },
+      { date: "2025-04", cases: 142, lower: 130, upper: 154 },
+      { date: "2025-05", cases: 158, lower: 145, upper: 171 },
+      { date: "2025-06", cases: 172, lower: 158, upper: 186 },
+      { date: "2025-07", cases: 189, lower: 173, upper: 205 },
+    ],
+    forecast: {
+      noAction: [
+        { date: "2025-08", cases: 208, lower: 188, upper: 228 },
+        { date: "2025-09", cases: 228, lower: 205, upper: 251 },
+        { date: "2025-10", cases: 250, lower: 225, upper: 275 },
+        { date: "2025-11", cases: 275, lower: 247, upper: 303 },
+        { date: "2025-12", cases: 302, lower: 270, upper: 334 },
+      ],
+      intervention: [
+        { date: "2025-08", cases: 195, lower: 175, upper: 215 },
+        { date: "2025-09", cases: 202, lower: 180, upper: 224 },
+        { date: "2025-10", cases: 210, lower: 187, upper: 233 },
+        { date: "2025-11", cases: 218, lower: 194, upper: 242 },
+        { date: "2025-12", cases: 225, lower: 200, upper: 250 },
+      ],
+    },
+  },
+  metformin_lactic_acidosis: {
+    historical: [
+      { date: "2025-01", cases: 98, lower: 88, upper: 108 },
+      { date: "2025-02", cases: 112, lower: 102, upper: 122 },
+      { date: "2025-03", cases: 128, lower: 116, upper: 140 },
+      { date: "2025-04", cases: 138, lower: 125, upper: 151 },
+      { date: "2025-05", cases: 145, lower: 132, upper: 158 },
+      { date: "2025-06", cases: 150, lower: 137, upper: 163 },
+      { date: "2025-07", cases: 156, lower: 142, upper: 170 },
+    ],
+    forecast: {
+      noAction: [
+        { date: "2025-08", cases: 165, lower: 150, upper: 180 },
+        { date: "2025-09", cases: 175, lower: 158, upper: 192 },
+        { date: "2025-10", cases: 186, lower: 168, upper: 204 },
+        { date: "2025-11", cases: 198, lower: 178, upper: 218 },
+        { date: "2025-12", cases: 210, lower: 189, upper: 231 },
+      ],
+      intervention: [
+        { date: "2025-08", cases: 158, lower: 143, upper: 173 },
+        { date: "2025-09", cases: 160, lower: 145, upper: 175 },
+        { date: "2025-10", cases: 162, lower: 147, upper: 177 },
+        { date: "2025-11", cases: 164, lower: 149, upper: 179 },
+        { date: "2025-12", cases: 166, lower: 151, upper: 181 },
+      ],
+    },
+  },
+  lisinopril_angioedema: {
+    historical: [
+      { date: "2025-01", cases: 72, lower: 65, upper: 79 },
+      { date: "2025-02", cases: 78, lower: 71, upper: 85 },
+      { date: "2025-03", cases: 85, lower: 77, upper: 93 },
+      { date: "2025-04", cases: 90, lower: 82, upper: 98 },
+      { date: "2025-05", cases: 94, lower: 86, upper: 102 },
+      { date: "2025-06", cases: 96, lower: 88, upper: 104 },
+      { date: "2025-07", cases: 98, lower: 90, upper: 106 },
+    ],
+    forecast: {
+      noAction: [
+        { date: "2025-08", cases: 101, lower: 92, upper: 110 },
+        { date: "2025-09", cases: 104, lower: 95, upper: 113 },
+        { date: "2025-10", cases: 107, lower: 98, upper: 116 },
+        { date: "2025-11", cases: 110, lower: 101, upper: 119 },
+        { date: "2025-12", cases: 113, lower: 104, upper: 122 },
+      ],
+      intervention: [
+        { date: "2025-08", cases: 99, lower: 90, upper: 108 },
+        { date: "2025-09", cases: 100, lower: 91, upper: 109 },
+        { date: "2025-10", cases: 101, lower: 92, upper: 110 },
+        { date: "2025-11", cases: 102, lower: 93, upper: 111 },
+        { date: "2025-12", cases: 103, lower: 94, upper: 112 },
+      ],
+    },
+  },
+  atorvastatin_rhabdo: {
+    historical: [
+      { date: "2025-01", cases: 52, lower: 47, upper: 57 },
+      { date: "2025-02", cases: 56, lower: 51, upper: 61 },
+      { date: "2025-03", cases: 60, lower: 55, upper: 65 },
+      { date: "2025-04", cases: 63, lower: 58, upper: 68 },
+      { date: "2025-05", cases: 65, lower: 60, upper: 70 },
+      { date: "2025-06", cases: 66, lower: 61, upper: 71 },
+      { date: "2025-07", cases: 67, lower: 62, upper: 72 },
+    ],
+    forecast: {
+      noAction: [
+        { date: "2025-08", cases: 68, lower: 63, upper: 73 },
+        { date: "2025-09", cases: 69, lower: 64, upper: 74 },
+        { date: "2025-10", cases: 70, lower: 65, upper: 75 },
+        { date: "2025-11", cases: 71, lower: 66, upper: 76 },
+        { date: "2025-12", cases: 72, lower: 67, upper: 77 },
+      ],
+      intervention: [
+        { date: "2025-08", cases: 66, lower: 61, upper: 71 },
+        { date: "2025-09", cases: 65, lower: 60, upper: 70 },
+        { date: "2025-10", cases: 64, lower: 59, upper: 69 },
+        { date: "2025-11", cases: 63, lower: 58, upper: 68 },
+        { date: "2025-12", cases: 62, lower: 57, upper: 67 },
+      ],
+    },
+  },
+};
+

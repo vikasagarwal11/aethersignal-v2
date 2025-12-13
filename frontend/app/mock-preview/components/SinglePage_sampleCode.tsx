@@ -30,28 +30,27 @@ function cx(...parts: Array<string | false | null | undefined>) {
 function severityStyles(priority: "Critical" | "High" | "Medium") {
   // Structural severity encoding: subtle row tint + left accent bar.
   // NOTE: uses tokens + risk-bg vars (works in light/dark).
-  // In dark mode, we restore original vibrant colors: red, amber, gray.
   if (priority === "Critical") {
     return {
       row: "bg-[color:var(--risk-critical-bg)]/55 hover:bg-[color:var(--risk-critical-bg)]/75",
-      bar: "bg-[color:var(--risk-critical)] dark:bg-red-500",
+      bar: "bg-[color:var(--risk-critical)]",
       pill:
-        "bg-[color:var(--risk-critical-bg)] border border-[color:var(--risk-critical)]/35 text-[color:var(--risk-critical)] dark:bg-red-500/20 dark:border-red-500/60 dark:text-red-100",
+        "bg-[color:var(--risk-critical-bg)] border border-[color:var(--risk-critical)]/35 text-[color:var(--risk-critical)]",
     };
   }
   if (priority === "High") {
     return {
       row: "bg-[color:var(--risk-high-bg)]/45 hover:bg-[color:var(--risk-high-bg)]/65",
-      bar: "bg-[color:var(--risk-high)] dark:bg-amber-500",
+      bar: "bg-[color:var(--risk-high)]",
       pill:
-        "bg-[color:var(--risk-high-bg)] border border-[color:var(--risk-high)]/30 text-[color:var(--risk-high)] dark:bg-amber-500/15 dark:border-amber-500/50 dark:text-amber-100",
+        "bg-[color:var(--risk-high-bg)] border border-[color:var(--risk-high)]/30 text-[color:var(--risk-high)]",
     };
   }
   return {
     row: "bg-[color:var(--risk-medium-bg)]/35 hover:bg-[color:var(--risk-medium-bg)]/55",
-    bar: "bg-[color:var(--risk-medium)] dark:bg-gray-500",
+    bar: "bg-[color:var(--risk-medium)]",
     pill:
-      "bg-[color:var(--risk-medium-bg)] border border-[color:var(--risk-medium)]/25 text-[color:var(--risk-medium)] dark:bg-gray-700/30 dark:border-gray-500/60 dark:text-gray-100",
+      "bg-[color:var(--risk-medium-bg)] border border-[color:var(--risk-medium)]/25 text-[color:var(--risk-medium)]",
   };
 }
 
@@ -285,7 +284,7 @@ export function SignalsPage() {
                 <div className="text-[10px] font-medium text-[var(--muted)] mb-0.5">{kpi.label}</div>
                 <div className="flex items-baseline justify-between">
                   <div className="text-[18px] font-semibold tracking-tight text-[var(--text)]">{kpi.value}</div>
-                  <div className="text-[10px] rounded-full px-2 py-0.5 border border-[color:var(--border-strong)] bg-[color:var(--accent-weak)] text-[var(--text)]">
+                  <div className="text-[10px] rounded-full px-2 py-0.5 border border-[color:var(--border-strong)] bg-[color:var(--accent-weak)] text-[color:var(--text)]">
                     {kpi.delta}
                   </div>
                 </div>
@@ -299,11 +298,11 @@ export function SignalsPage() {
 
         {/* AI Priority Signals */}
         <section className="px-4 lg:px-6 mt-3">
-          <div className="rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] dark:border-red-500/35 dark:bg-gradient-to-r dark:from-red-500/12 dark:via-[#141821] dark:to-[#141821] shadow-[var(--shadow)] px-3.5 py-2">
+          <div className="rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] shadow-[var(--shadow)] px-3.5 py-2">
             <div className="flex flex-wrap items-start justify-between gap-2.5">
               <div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--risk-critical-bg)] dark:bg-red-500/20 px-2.5 py-0.5 text-[10px] font-semibold text-[color:var(--risk-critical)] dark:text-red-200 border border-[color:var(--risk-critical)]/30 dark:border-red-500/60">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--risk-critical)] dark:bg-red-300 animate-pulse" />
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--risk-critical-bg)] px-2.5 py-0.5 text-[10px] font-semibold text-[color:var(--risk-critical)] border border-[color:var(--risk-critical)]/30">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--risk-critical)] animate-pulse" />
                   AI Priority Signals
                 </div>
                 <p className="mt-1 text-[10px] text-[var(--muted)] max-w-xl">
@@ -316,12 +315,12 @@ export function SignalsPage() {
                 <span className="rounded-full bg-[color:var(--panel-2)] border border-[color:var(--border-strong)] px-2 py-0.5 text-[var(--text)]">
                   {severitySummary}
                 </span>
-                <button className="rounded-full border border-[color:var(--risk-critical)]/35 dark:border-red-500/60 px-2.5 py-0.5 text-[10px] font-medium text-[color:var(--risk-critical)] dark:text-red-100 hover:bg-[color:var(--risk-critical-bg)] dark:hover:bg-red-500/20">
+                <button className="rounded-full border border-[color:var(--risk-critical)]/35 px-2.5 py-0.5 text-[10px] font-medium text-[color:var(--risk-critical)] hover:bg-[color:var(--risk-critical-bg)]">
                   View all critical
                 </button>
                 <button
                   onClick={() => setPriorityExpanded((v) => !v)}
-                  className="rounded-full border border-[color:var(--risk-critical)]/30 dark:border-red-500/50 bg-[color:var(--risk-critical-bg)] dark:bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-[color:var(--risk-critical)] dark:text-red-200 hover:opacity-90"
+                  className="rounded-full border border-[color:var(--risk-critical)]/30 bg-[color:var(--risk-critical-bg)] px-2 py-0.5 text-[10px] font-semibold text-[color:var(--risk-critical)] hover:opacity-90"
                   aria-label={priorityExpanded ? "Collapse AI Priority Signals" : "Expand AI Priority Signals"}
                 >
                   {priorityExpanded ? "▾" : "▸"}
@@ -346,27 +345,26 @@ export function SignalsPage() {
                     className={cx(
                       "text-left rounded-2xl border bg-[color:var(--panel)] px-3 py-2 text-[10px] flex flex-col gap-1.5 transition-all cursor-pointer",
                       "border-[color:var(--border)] hover:border-[color:var(--border-strong)] hover:shadow-[var(--shadow)]",
-                      "dark:border-red-500/35 dark:bg-[#11151E]/95 dark:hover:border-red-400/70 dark:hover:bg-[#151A22]",
                     )}
                   >
                     {/* header */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="font-semibold text-[var(--text)] dark:text-gray-100 truncate text-[11px]">{sig.drug}</div>
-                        <div className="text-[10px] text-[var(--muted)] dark:text-gray-400 truncate">{sig.reaction}</div>
+                        <div className="font-semibold text-[var(--text)] truncate text-[11px]">{sig.drug}</div>
+                        <div className="text-[10px] text-[var(--muted)] truncate">{sig.reaction}</div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="rounded-full bg-[color:var(--accent)] dark:bg-gradient-to-r dark:from-indigo-500 dark:to-purple-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                        <span className="rounded-full bg-[color:var(--accent)] px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
                           {Math.round(parseFloat(sig.score) * 100)}% AI
                         </span>
-                        <span className="rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel-2)] dark:border-gray-700 dark:bg-gray-900 px-1.5 py-0.5 text-[9px] uppercase text-[var(--muted)] dark:text-gray-300">
+                        <span className="rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel-2)] px-1.5 py-0.5 text-[9px] uppercase text-[var(--muted)]">
                           Rank #{sig.rank}
                         </span>
                       </div>
                     </div>
 
                     {/* meta */}
-                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--muted)] dark:text-gray-300">
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--muted)]">
                       <span className="rounded-full border border-[color:var(--border-strong)] bg-[color:var(--panel-2)] px-2 py-0.5 text-[var(--text)]">
                         Velocity: <span className="font-semibold text-[var(--text)]">{sig.velocity}</span>
                       </span>
@@ -376,16 +374,16 @@ export function SignalsPage() {
                     </div>
 
                     {/* metric actions */}
-                    <div className="flex items-center justify-between text-[10px] text-[var(--muted)] dark:text-gray-300">
+                    <div className="flex items-center justify-between text-[10px] text-[var(--muted)]">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           openMetricModal("PRR", sig);
                         }}
-                        className="inline-flex items-center gap-1 rounded-md bg-[color:var(--panel-2)] dark:bg-red-500/20 px-1.5 py-0.5 text-[10px] text-[var(--text)] dark:text-red-100 border border-[color:var(--border-strong)] dark:border-red-500/50 hover:bg-[color:var(--panel-3)]"
+                        className="inline-flex items-center gap-1 rounded-md bg-[color:var(--panel-2)] px-1.5 py-0.5 text-[10px] text-[var(--text)] border border-[color:var(--border-strong)] hover:bg-[color:var(--panel-3)]"
                       >
-                        <span className="text-[9px] uppercase text-[var(--muted)] dark:text-red-200/80">PRR</span>
+                        <span className="text-[9px] uppercase text-[var(--muted)]">PRR</span>
                         <span className="font-semibold">{sig.prr}</span>
                       </button>
 
@@ -395,9 +393,9 @@ export function SignalsPage() {
                           e.stopPropagation();
                           openMetricModal("Cases", sig);
                         }}
-                        className="inline-flex items-center gap-1 rounded-md bg-[color:var(--panel-2)] dark:bg-gray-900 px-1.5 py-0.5 text-[10px] text-[var(--text)] dark:text-gray-100 border border-[color:var(--border-strong)] dark:border-gray-700 hover:bg-[color:var(--panel-3)]"
+                        className="inline-flex items-center gap-1 rounded-md bg-[color:var(--panel-2)] px-1.5 py-0.5 text-[10px] text-[var(--text)] border border-[color:var(--border-strong)] hover:bg-[color:var(--panel-3)]"
                       >
-                        <span className="text-[9px] uppercase text-[var(--muted)] dark:text-gray-400">Cases</span>
+                        <span className="text-[9px] uppercase text-[var(--muted)]">Cases</span>
                         <span className="font-semibold">{sig.cases}</span>
                       </button>
 
@@ -407,9 +405,9 @@ export function SignalsPage() {
                           e.stopPropagation();
                           openMetricModal("Trend", sig);
                         }}
-                        className="inline-flex items-center gap-1 rounded-md bg-[color:var(--panel-2)] dark:bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-[var(--text)] dark:text-emerald-200 border border-[color:var(--border-strong)] dark:border-emerald-500/40 hover:bg-[color:var(--panel-3)]"
+                        className="inline-flex items-center gap-1 rounded-md bg-[color:var(--panel-2)] px-1.5 py-0.5 text-[10px] text-[var(--text)] border border-[color:var(--border-strong)] hover:bg-[color:var(--panel-3)]"
                       >
-                        <span className="text-[9px] uppercase text-[var(--muted)] dark:text-emerald-200/80">Trend</span>
+                        <span className="text-[9px] uppercase text-[var(--muted)]">Trend</span>
                         <span className="font-semibold">
                           {sig.trend === "Increasing" ? "↗" : sig.trend === "Decreasing" ? "↘" : "•"}
                         </span>
@@ -429,13 +427,13 @@ export function SignalsPage() {
               <h2 className="text-sm font-semibold text-[var(--text)]">All Signals</h2>
               <span className="text-[11px] text-[var(--muted)]">932 results</span>
               <div className="hidden md:flex items-center gap-1 ml-3 text-[11px]">
-                <button className="rounded-full px-2 py-1 text-[11px] border border-[color:var(--risk-critical)]/30 bg-[color:var(--risk-critical-bg)] text-[color:var(--risk-critical)] dark:bg-red-500/20 dark:border-red-500/60 dark:text-red-100">
+                <button className="rounded-full px-2 py-1 text-[11px] border border-[color:var(--risk-critical)]/30 bg-[color:var(--risk-critical-bg)] text-[color:var(--risk-critical)]">
                   Critical
                 </button>
-                <button className="rounded-full px-2 py-1 text-[11px] border border-[color:var(--risk-high)]/25 bg-[color:var(--risk-high-bg)] text-[color:var(--risk-high)] dark:bg-amber-500/15 dark:border-amber-500/50 dark:text-amber-100">
+                <button className="rounded-full px-2 py-1 text-[11px] border border-[color:var(--risk-high)]/25 bg-[color:var(--risk-high-bg)] text-[color:var(--risk-high)]">
                   High
                 </button>
-                <button className="rounded-full px-2 py-1 text-[11px] border border-[color:var(--risk-medium)]/20 bg-[color:var(--risk-medium-bg)] text-[color:var(--risk-medium)] dark:bg-gray-700/30 dark:border-gray-500/60 dark:text-gray-100">
+                <button className="rounded-full px-2 py-1 text-[11px] border border-[color:var(--risk-medium)]/20 bg-[color:var(--risk-medium-bg)] text-[color:var(--risk-medium)]">
                   Medium
                 </button>
               </div>
@@ -490,7 +488,7 @@ export function SignalsPage() {
 
                         <td className="px-3 py-2 text-center">
                           {row.serious === "Yes" ? (
-                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-[color:var(--risk-critical)]/25 bg-[color:var(--risk-critical-bg)] text-[color:var(--risk-critical)] dark:bg-red-500/15 dark:border-red-500/40 dark:text-red-200">
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-[color:var(--risk-critical)]/25 bg-[color:var(--risk-critical-bg)] text-[color:var(--risk-critical)]">
                               Yes
                             </span>
                           ) : (
@@ -697,7 +695,7 @@ export function SignalsPage() {
             />
             <button
               onClick={sendMessage}
-              className="h-10 w-10 rounded-full bg-[color:var(--accent)] flex items-center justify-center text-white text-sm hover:bg-[color:var(--accent-hover-bright)] hover:scale-110 transition-all duration-200"
+              className="h-10 w-10 rounded-full bg-[color:var(--accent)] flex items-center justify-center text-white text-sm hover:opacity-90"
               aria-label="Send"
               suppressHydrationWarning
             >
