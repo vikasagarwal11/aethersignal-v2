@@ -479,3 +479,160 @@ export const trajectoryDataBySignal: Record<string, TrajectoryData> = {
   },
 };
 
+// =========================
+// Evidence Data (Source Breakdown)
+// =========================
+
+export type EvidenceSource = {
+  source: string;
+  count: number;
+  lastUpdate: string;
+  newThisWeek?: number;
+  icon?: string;
+};
+
+export const evidenceDataBySignal: Record<string, EvidenceSource[]> = {
+  aspirin_gi_bleeding: [
+    { source: "FAERS", count: 234, lastUpdate: "3 days ago", newThisWeek: 12, icon: "📊" },
+    { source: "Literature", count: 12, lastUpdate: "1 week ago", newThisWeek: 2, icon: "📚" },
+    { source: "Early Signals", count: 45, lastUpdate: "2 days ago", newThisWeek: 8, icon: "🔍" },
+  ],
+  warfarin_internal_hemorrhage: [
+    { source: "FAERS", count: 189, lastUpdate: "2 days ago", newThisWeek: 9, icon: "📊" },
+    { source: "Literature", count: 8, lastUpdate: "5 days ago", newThisWeek: 1, icon: "📚" },
+    { source: "Early Signals", count: 32, lastUpdate: "1 day ago", newThisWeek: 5, icon: "🔍" },
+  ],
+  metformin_lactic_acidosis: [
+    { source: "FAERS", count: 156, lastUpdate: "4 days ago", newThisWeek: 7, icon: "📊" },
+    { source: "Literature", count: 6, lastUpdate: "2 weeks ago", icon: "📚" },
+    { source: "Early Signals", count: 28, lastUpdate: "3 days ago", newThisWeek: 4, icon: "🔍" },
+  ],
+  lisinopril_angioedema: [
+    { source: "FAERS", count: 98, lastUpdate: "5 days ago", newThisWeek: 3, icon: "📊" },
+    { source: "Literature", count: 4, lastUpdate: "1 week ago", icon: "📚" },
+    { source: "Early Signals", count: 18, lastUpdate: "4 days ago", newThisWeek: 2, icon: "🔍" },
+  ],
+  atorvastatin_rhabdo: [
+    { source: "FAERS", count: 67, lastUpdate: "6 days ago", newThisWeek: 2, icon: "📊" },
+    { source: "Literature", count: 3, lastUpdate: "2 weeks ago", icon: "📚" },
+    { source: "Early Signals", count: 12, lastUpdate: "5 days ago", icon: "🔍" },
+  ],
+};
+
+// =========================
+// Case Data (Individual Safety Cases)
+// =========================
+
+export type SafetyCase = {
+  caseId: string;
+  age: number;
+  sex: "M" | "F" | "U";
+  serious: boolean;
+  outcome: string;
+  onsetDate: string;
+  country?: string;
+};
+
+export const casesDataBySignal: Record<string, SafetyCase[]> = {
+  aspirin_gi_bleeding: [
+    { caseId: "CASE-2341", age: 65, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-14", country: "US" },
+    { caseId: "CASE-2342", age: 72, sex: "M", serious: true, outcome: "Life-threatening", onsetDate: "2025-06-18", country: "US" },
+    { caseId: "CASE-2343", age: 58, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-22", country: "CA" },
+    { caseId: "CASE-2344", age: 81, sex: "M", serious: true, outcome: "Death", onsetDate: "2025-06-25", country: "US" },
+    { caseId: "CASE-2345", age: 54, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-07-01", country: "UK" },
+    { caseId: "CASE-2346", age: 67, sex: "M", serious: true, outcome: "Hospitalized", onsetDate: "2025-07-03", country: "US" },
+    { caseId: "CASE-2347", age: 73, sex: "F", serious: true, outcome: "Life-threatening", onsetDate: "2025-07-05", country: "DE" },
+    { caseId: "CASE-2348", age: 59, sex: "M", serious: false, outcome: "Other", onsetDate: "2025-07-08", country: "US" },
+    { caseId: "CASE-2349", age: 68, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-07-10", country: "FR" },
+    { caseId: "CASE-2350", age: 75, sex: "M", serious: true, outcome: "Death", onsetDate: "2025-07-12", country: "US" },
+  ],
+  warfarin_internal_hemorrhage: [
+    { caseId: "CASE-1891", age: 71, sex: "M", serious: true, outcome: "Life-threatening", onsetDate: "2025-06-10", country: "US" },
+    { caseId: "CASE-1892", age: 68, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-15", country: "US" },
+    { caseId: "CASE-1893", age: 79, sex: "M", serious: true, outcome: "Death", onsetDate: "2025-06-20", country: "CA" },
+    { caseId: "CASE-1894", age: 62, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-25", country: "UK" },
+    { caseId: "CASE-1895", age: 74, sex: "M", serious: true, outcome: "Life-threatening", onsetDate: "2025-07-02", country: "US" },
+  ],
+  metformin_lactic_acidosis: [
+    { caseId: "CASE-1561", age: 58, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-12", country: "US" },
+    { caseId: "CASE-1562", age: 65, sex: "M", serious: true, outcome: "Life-threatening", onsetDate: "2025-06-16", country: "US" },
+    { caseId: "CASE-1563", age: 72, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-21", country: "DE" },
+    { caseId: "CASE-1564", age: 61, sex: "M", serious: true, outcome: "Death", onsetDate: "2025-06-28", country: "FR" },
+    { caseId: "CASE-1565", age: 69, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-07-04", country: "US" },
+  ],
+  lisinopril_angioedema: [
+    { caseId: "CASE-0981", age: 55, sex: "M", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-11", country: "US" },
+    { caseId: "CASE-0982", age: 63, sex: "F", serious: true, outcome: "Life-threatening", onsetDate: "2025-06-19", country: "US" },
+    { caseId: "CASE-0983", age: 57, sex: "M", serious: false, outcome: "Other", onsetDate: "2025-06-24", country: "CA" },
+    { caseId: "CASE-0984", age: 66, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-07-01", country: "UK" },
+  ],
+  atorvastatin_rhabdo: [
+    { caseId: "CASE-0671", age: 62, sex: "M", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-13", country: "US" },
+    { caseId: "CASE-0672", age: 59, sex: "F", serious: true, outcome: "Hospitalized", onsetDate: "2025-06-17", country: "US" },
+    { caseId: "CASE-0673", age: 71, sex: "M", serious: true, outcome: "Life-threatening", onsetDate: "2025-06-26", country: "DE" },
+  ],
+};
+
+// =========================
+// Audit Trail Data
+// =========================
+
+export type AuditEvent = {
+  id: string;
+  action: string;
+  actor: "AI" | "User";
+  actorName?: string;
+  timestamp: string;
+  details?: string;
+};
+
+export const auditDataBySignal: Record<string, AuditEvent[]> = {
+  aspirin_gi_bleeding: [
+    {
+      id: "audit-1",
+      action: "Query executed",
+      actor: "AI",
+      timestamp: "2025-12-11 09:15:02 UTC",
+      details: "Signal detection pipeline run for aspirin_gi_bleeding",
+    },
+    {
+      id: "audit-2",
+      action: "Trajectory generated",
+      actor: "AI",
+      timestamp: "2025-12-11 09:15:05 UTC",
+      details: "Forecast model v2.3.1 applied with 6m horizon",
+    },
+    {
+      id: "audit-3",
+      action: "Recommendation issued",
+      actor: "AI",
+      timestamp: "2025-12-11 09:15:08 UTC",
+      details: "Escalate - High velocity + severity",
+    },
+    {
+      id: "audit-4",
+      action: "Analysis viewed",
+      actor: "User",
+      actorName: "AR",
+      timestamp: "2025-12-11 09:20:15 UTC",
+      details: "Deep analysis modal opened",
+    },
+    {
+      id: "audit-5",
+      action: "Filters applied",
+      actor: "User",
+      actorName: "AR",
+      timestamp: "2025-12-11 09:21:30 UTC",
+      details: "Serious only · Last 12 months · Org scope",
+    },
+    {
+      id: "audit-6",
+      action: "Report generated",
+      actor: "User",
+      actorName: "AR",
+      timestamp: "2025-12-11 09:25:44 UTC",
+      details: "Briefing PDF exported",
+    },
+  ],
+};
+

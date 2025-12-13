@@ -1,5 +1,33 @@
 "use client";
 
+/**
+ * SIGNALS PAGE
+ * ------------
+ * Primary operational view for safety analysts.
+ *
+ * AetherSignal is a Pre-Signal Safety Intelligence System.
+ *
+ * It is NOT:
+ *  - a PV system of record
+ *  - an ICSR processor
+ *  - a regulatory submission engine
+ *
+ * It IS:
+ *  - an intelligence layer that sits above Argus / Veeva / LS
+ *  - focused on early detection, trajectory, prioritization, and explainability
+ *  - human-in-the-loop by design
+ *
+ * This page shows:
+ *  - Portfolio-level overview of emerging drug-event signals
+ *  - Ranked priority signals based on composite risk and velocity
+ *  - Operational triage table for signal review
+ *  - Conversational AI assistant for guided analysis
+ *
+ * Key Principle:
+ *  - AI recommends; humans decide.
+ *  - All reasoning is explicit, traceable, and inspection-ready.
+ */
+
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { DeepAnalysisModal, type DeepTab } from "./DeepAnalysisModal";
 import {
@@ -192,7 +220,33 @@ export function SignalsPage() {
 
   return (
     <div className="flex flex-1 h-[calc(100vh-4rem)] min-h-0 overflow-hidden" suppressHydrationWarning>
-      {/* LEFT RAIL */}
+      {/* ================= LEFT RAIL: SESSIONS PANEL =================
+       *
+       * SESSIONS PANEL
+       * --------------
+       * Represents analysis contexts, not chat logs.
+       *
+       * Each session corresponds to:
+       *  - A specific data ingestion (e.g., FAERS cut, EudraVigilance sync)
+       *  - A time-bounded snapshot of safety data
+       *  - A reproducible analytical state
+       *
+       * Switching sessions re-scopes:
+       *  - KPI metrics
+       *  - Priority signals
+       *  - Table results
+       *  - AI assistant context
+       *
+       * Backend (future):
+       *  - session_id
+       *  - org_id
+       *  - data_sources[]
+       *  - ingestion_timestamp
+       *
+       * Users expect:
+       *  - Switching sessions = switching what data was analyzed
+       *  - Signals, metrics, and chat all re-scope to the session
+       */}
       <aside className="w-68 border-r border-[color:var(--border)] bg-[color:var(--panel)] backdrop-blur flex flex-col min-h-0 overflow-hidden text-[11px]">
         <div className="px-3 pt-2 pb-1.5 border-b border-[color:var(--border)] flex items-center justify-between">
           <div className="font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Context</div>
@@ -271,7 +325,32 @@ export function SignalsPage() {
           </div>
         </section>
 
-        {/* KPI row */}
+        {/* ================= SAFETY SNAPSHOT KPIs =================
+         *
+         * SAFETY SNAPSHOT KPIs
+         * --------------------
+         * High-level portfolio metrics for executive and safety lead awareness.
+         *
+         * These are not signals themselves — they provide context for prioritization.
+         *
+         * What each card represents:
+         *  - Total Cases → volume context
+         *  - Critical Signals → how many signals require attention
+         *  - Serious Events → regulatory relevance
+         *  - Products Monitored → scope of responsibility
+         *
+         * Intended consumers:
+         *  - Safety leadership
+         *  - Signal review committees
+         *  - Executives needing situational awareness
+         *
+         * Data sources (future):
+         *  - Aggregated case tables
+         *  - Signal ranking engine
+         *  - Product metadata
+         *
+         * This is what execs look at first.
+         */}
         <section className="px-4 lg:px-6 pt-2">
           <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
             Today's Safety Snapshot
@@ -297,7 +376,43 @@ export function SignalsPage() {
           </div>
         </section>
 
-        {/* AI Priority Signals */}
+        {/* ================= AI PRIORITY SIGNALS =================
+         *
+         * AI PRIORITY SIGNALS
+         * ------------------
+         * The heart of AetherSignal — ranked pre-signal safety issues.
+         *
+         * This is the core intelligence output:
+         *  - Ranked list of emerging drug–event combinations
+         *  - Based on composite scoring (disproportionality, velocity, novelty, corroboration)
+         *
+         * Why this is NOT "signal detection":
+         *  - These may NOT meet regulatory signal thresholds yet
+         *  - They are pre-signal risk indicators
+         *  - Require human judgment before regulatory action
+         *
+         * Why velocity is shown:
+         *  - Answers: "Is this getting worse right now?"
+         *  - Temporal acceleration is a key prioritization factor
+         *
+         * Why Escalate / Monitor / Defer is bounded:
+         *  - Recommends action (does not execute)
+         *  - Keeps system inspection-safe
+         *  - Preserves human-in-the-loop decision making
+         *
+         * Ranking factors (future):
+         *  - Disproportionality (PRR, EBGM)
+         *  - Temporal velocity / acceleration
+         *  - Novelty vs baseline
+         *  - Multi-source corroboration
+         *
+         * Actions are bounded recommendations only:
+         *  - Escalate / Monitor / Defer
+         *  - No automated regulatory execution
+         *
+         * Key Principle:
+         *  - AI recommends; humans decide.
+         */}
         <section className="px-4 lg:px-6 mt-3">
           <div className="rounded-2xl border border-[color:var(--border-strong)] bg-[color:var(--panel)] dark:border-red-500/35 dark:bg-gradient-to-r dark:from-red-500/12 dark:via-[#141821] dark:to-[#141821] shadow-[var(--shadow)] px-3.5 py-2">
             <div className="flex flex-wrap items-start justify-between gap-2.5">
@@ -521,8 +636,54 @@ export function SignalsPage() {
         </section>
       </main>
 
-      {/* RIGHT RAIL: AI Assistant */}
+      {/* ================= RIGHT RAIL: AI ASSISTANT =================
+       *
+       * AI ASSISTANT PANEL
+       * -----------------
+       * Conversational intelligence layer for guided safety analysis.
+       *
+       * This is a conversational reasoning layer, not a chatbot.
+       *
+       * Purpose:
+       *  - Translate natural language questions into analytical insights
+       *  - Summarize current findings
+       *  - Guide investigation through follow-up questions
+       *  - Assist, not replace, human judgment
+       *
+       * Key design principle:
+       *  The AI:
+       *    - explains
+       *    - summarizes
+       *    - guides investigation
+       *  but does NOT replace analyst judgment.
+       *
+       * Why it's always visible:
+       *  - Encourages iterative refinement
+       *  - Keeps reasoning transparent
+       *  - Anchors trust through explainability
+       *  - Supports continuous learning and refinement
+       *
+       * Features:
+       *  - Natural language query interpretation
+       *  - Filter interpretation and explanation
+       *  - Evidence source visibility
+       *  - Audit trail access
+       *  - Report generation assistance
+       *
+       * Guardrails:
+       *  - Read-only recommendations
+       *  - No automated decisions
+       *  - All outputs explainable and traceable
+       *  - Human confirmation required for any actions
+       *
+       * Source of information (future):
+       *  - Current session context
+       *  - Signal metadata
+       *  - Aggregated case statistics
+       *  - Query interpretation results
+       */}
       <aside className="w-80 border-l border-[color:var(--border)] bg-[color:var(--bg)] flex flex-col min-h-0 overflow-hidden">
+        {/* AI Assistant Header and Tabs */}
         <div className="px-3 pt-3 pb-2 border-b border-[color:var(--border)]">
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -534,7 +695,10 @@ export function SignalsPage() {
               Refinement
             </label>
           </div>
-
+          {/* Tab Navigation
+           *  - AI Assistant: Interactive conversational interface
+           *  - Analyses: List of this session's saved analyses and summaries
+           */}
           <div className="mt-2 inline-flex rounded-full bg-[color:var(--panel-2)] p-1 text-[11px] font-medium text-[var(--muted)]">
             <button
               className={cx("px-2 py-0.5 rounded-full", chatTab === "assistant" ? "bg-[color:var(--panel-3)] text-[var(--text)]" : "text-[var(--muted)]")}
